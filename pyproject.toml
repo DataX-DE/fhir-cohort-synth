@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fhir-cohort-synth"
 version = "0.1.0"
-description = "Offline FHIR ingestion, exact profiling and source-derived perturbation"
+description = "Offline FHIR ingestion and source-derived perturbation"
 requires-python = ">=3.11"
 dependencies = []
 

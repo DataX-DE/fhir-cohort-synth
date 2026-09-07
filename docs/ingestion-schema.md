@@ -1,30 +1,28 @@
-# Ingestion index, schema version 1
+# Ingestion index, schema version 2
 
 This is a local staging index containing source patient data. Internal numeric
 keys are run-local; they are not synthetic IDs and are not stable across runs.
+SQLite holds the resource payloads and lookups needed for perturbation on disk.
+The schema lives in `fhir_cohort_synth/schema.py`.
 
 | Table | Purpose |
 | --- | --- |
 | `run` | Completion status, schema version and assumed FHIR target |
 | `sources` | Local source paths; keep private |
-| `bundles` | Bundle envelope metadata, source and JSON locator |
-| `bundle_entries` | Entry metadata (including request, response, search and fullUrl), with index into its Bundle |
 | `resources` | Deduplicated resources, logical identity, SHA-256 digest and complete parsed JSON payload |
 | `occurrences` | Every resource appearance, source locator, Bundle/file context, fullUrl and containment |
 | `aliases` | Scoped contained, relative and absolute identities for reference lookup |
-| `profiles` | Canonical URL, declared version (empty means unspecified) and recognized MII module |
-| `extensions` | Extension URLs and whether they occur as modifier extensions |
 | `resource_references` | Source, field path, literal/logical form, resolution status and target |
 | `patient_memberships` | At most one patient per resource, with direct or inferred basis |
-| `observation_fields` | Main and component codes, value choice and original quantity units |
-| `version_evidence` | Explicit FHIR version declarations in conformance resources |
 | `issues` | Detailed local issues; locators and internal resource IDs permit source inspection |
 
 `resources.payload` preserves parsed JSON values, including decimal precision;
 it is not a byte-for-byte source archive. JSON keys are sorted and whitespace
 changes. A containing resource's payload includes its contained resources, which
 also have separate indexed rows. Avoid counting these twice when expanding
-payloads. Bundle envelopes are in `bundles`, not in resource counts.
+payloads. Bundle envelopes and entry metadata are not archived in this index.
+Their resource payloads are indexed; entry full URLs, lookup contexts and source
+locators remain on occurrences. The complete original export stays untouched.
 
 The duplicate key is `(identity, digest)`. `identity` is the full URL when
 available, otherwise resource type + logical ID, otherwise the source locator.
@@ -32,11 +30,20 @@ Contained identities include the root resource's internal ID. Conflicting
 payloads at the same identity remain separate rows and make the run incomplete.
 Reported patient counts count resource rows, not reconciled people.
 
-Reference totals count occurrences; profile and resource totals count deduplicated
-resource rows. `observation_fields` has one row per field coding, so a field
-with several codings contributes several inventory rows. Value measurements,
-qualitative values, diagnosis roles, timestamps and all other source fields
-remain in the payload. This is an ingestion inventory, not cohort statistics.
+Reference totals count occurrences; resource totals count deduplicated rows.
+Profile declarations, extensions, codes, units, measurements and timestamps remain
+in the payload. No separate inventories or hospital-module classification are
+stored. Missing profiles do not produce warnings. Malformed declarations,
+incompatible explicit FHIR versions and conflicting Observation value choices
+still produce processing errors. Perturbation computes before/after measurement
+statistics directly from resource JSON and stores them in its own state database.
+
+Schema 2 removes `bundles`, `bundle_entries`, `profiles`, `extensions`,
+`observation_fields`, `version_evidence` and the `resources.scope` column.
+The report omits those inventories and the Bundle count. Existing schema 1
+indexes remain readable by perturbation because its required columns are
+unchanged; no migration or rewriting of old databases occurs. Their previously
+recorded source warnings are still carried into perturbation reports.
 
 Literal FHIR `Reference.reference` values are resolved automatically using the
 bundled R4 datatype index. A field named `reference` may instead be a Reference
@@ -71,8 +78,8 @@ FROM resource_references
 WHERE status <> 'resolved';
 ```
 
-Before a later stage reads the index, require `run.status <> 'in_progress'`,
-the corresponding reports, and a reviewed issue inventory. `incomplete` indexes
+Before a later stage reads the index, require `run.status` to be `completed` or
+`completed_with_warnings` and the corresponding reports. `incomplete` indexes
 must not be treated as valid cohorts. Warnings still require cohort-specific
 decisions, such as whether unresolved links are expected external references or
 evidence of missing patient records.

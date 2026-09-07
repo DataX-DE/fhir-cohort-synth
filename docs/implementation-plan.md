@@ -23,6 +23,10 @@ and SQLite, with no runtime downloads or model training.
 The full-field profiler, configured relationship-grouping API and conditional
 statistics command have been removed. Perturbation uses the ingestion reference graph directly;
 its automatic measurement contexts still separate before/after numeric reports.
+Ingestion schema 2 also removes the profile, extension, measurement and version
+inventories, hospital-scope classification and archived Bundle metadata.
+Reference contexts and source resource JSON remain. Perturbation accepts both
+schema 1 and schema 2 indexes; its change ledger and numeric reports are unchanged.
 
 ## Deliberate first-version limits
 

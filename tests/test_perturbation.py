@@ -477,10 +477,50 @@ class PerturbationTests(unittest.TestCase):
         self.prepare([resource('Patient', 'p')])
         before = self.cohort.read_bytes()
         with open_source(self.cohort) as (db, run):
-            self.assertEqual(run['schema_version'], 1)
+            self.assertEqual(run['schema_version'], 2)
             with self.assertRaises(sqlite3.OperationalError):
                 db.execute("UPDATE run SET status='in_progress'")
         self.assertEqual(self.cohort.read_bytes(), before)
+
+    def test_legacy_index_matches_new_output_without_modification(self):
+        # Use the frozen, complete schema 1 rather than changing a version
+        # label on a schema 2 database. Extra inventory columns/tables must
+        # have no influence on patient parameters, references or measurements.
+        self.prepare([
+            observation('o', Decimal('4.20'), encounter={'reference': 'Encounter/e'},
+                        contained=[resource('Specimen', 'inside')], specimen={'reference': '#inside'}),
+            resource('Encounter', 'e', subject={'reference': 'Patient/p'},
+                     period={'start': '2020-01-01', 'end': '2020-01-03'}),
+            resource('Patient', 'p', birthDate='1980-01-01'),
+        ])
+        legacy_path = self.root / 'legacy.sqlite'
+        with closing(sqlite3.connect(legacy_path)) as legacy, \
+                closing(sqlite3.connect(self.cohort.as_uri() + '?mode=ro', uri=True)) as source:
+            legacy.executescript((REPO / 'tests/fixtures/ingestion-v1.sql').read_text())
+            legacy.execute('DELETE FROM run')
+            tables = ('run', 'sources', 'resources', 'occurrences', 'aliases',
+                      'resource_references', 'patient_memberships', 'issues')
+            for table in tables:
+                columns = [row[1] for row in source.execute(f'PRAGMA table_info({table})')]
+                rows = source.execute(f'SELECT * FROM {table} ORDER BY rowid')
+                if table == 'resources':
+                    columns.append('scope')
+                    rows = (tuple(row) + ('requested',) for row in rows)
+                placeholders = ','.join('?' for _ in columns)
+                legacy.executemany(f'INSERT INTO {table} ({",".join(columns)}) VALUES ({placeholders})', rows)
+            legacy.execute('UPDATE run SET schema_version=1')
+            legacy.commit()
+            legacy.execute('PRAGMA journal_mode=DELETE')
+
+        before = legacy_path.read_bytes()
+        with open_source(legacy_path) as (_, run):
+            self.assertEqual(run['schema_version'], 1)
+        perturb(legacy_path, self.root / 'legacy-output')
+        perturb(self.cohort, self.output)
+        for name in ('perturbed.ndjson', 'perturbation-report.json'):
+            self.assertEqual((self.root / 'legacy-output' / name).read_bytes(),
+                             (self.output / name).read_bytes())
+        self.assertEqual(legacy_path.read_bytes(), before)
 
     def test_missing_corrupt_and_symlinked_source_indexes_are_rejected(self):
         missing = self.root / 'missing.sqlite'
@@ -496,7 +536,7 @@ class PerturbationTests(unittest.TestCase):
 
     def test_source_errors_and_empty_population_override_a_completed_status(self):
         self.prepare([resource('Patient', 'p')])
-        for query in ("UPDATE issues SET severity='error'", 'DELETE FROM resources'):
+        for query in ("INSERT INTO issues(severity,code) VALUES ('error','test_error')", 'DELETE FROM resources'):
             copied = self.root / 'invalid.sqlite'
             shutil.copyfile(self.cohort, copied)
             with closing(sqlite3.connect(copied)) as db, db:

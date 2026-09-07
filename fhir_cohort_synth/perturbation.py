@@ -93,7 +93,7 @@ def _prepare_identities(source, ledger, settings):
     for resource in source.execute(
             'SELECT r.id,r.identity,r.digest,r.resource_type,r.logical_id,r.contained,p.patient_resource_id '
             'FROM resources r LEFT JOIN patient_memberships p ON p.resource_id=r.id ORDER BY r.id'):
-        # Ingestion schema 1 stores contained identity as "contained:<root row>#<id>".
+        # The ingestion index stores contained identity as "contained:<root row>#<id>".
         # Read that index convention here, never infer ownership from a FHIR ID.
         if resource['contained']:
             root_id = int(resource['identity'].split(':', 1)[1].split('#', 1)[0])
@@ -152,7 +152,7 @@ def _prepare_date_offsets(source, ledger, types, settings):
 
 
 def _reference_path(path):
-    """Bridge to schema-1 reference paths; never parse these ambiguous strings.
+    """Bridge to ingestion reference paths; never parse these ambiguous strings.
 
     Traversal uses typed paths. Reference lookup additionally matches the
     literal and owning resource, so a literal key 'a.b' cannot redirect a link

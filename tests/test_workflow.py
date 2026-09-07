@@ -69,7 +69,7 @@ class WorkflowTests(unittest.TestCase):
         result = loads((self.output / 'perturbed/perturbation-report.json').read_text())
         self.assertEqual(result['counts']['root_resources'], 2)
         self.assertEqual(result['validation']['references_checked'], 1)
-        self.assertEqual(self.status()['status'], 'completed_with_warnings')
+        self.assertEqual(self.status()['status'], 'completed')
         self.assertTrue(any(issue['code'] == 'duplicate_resource' for issue in result['source_issues']))
 
     def test_invalid_options_paths_and_existing_output_fail_before_processing(self):

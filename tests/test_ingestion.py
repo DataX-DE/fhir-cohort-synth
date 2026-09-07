@@ -76,14 +76,15 @@ class IngestionTests(unittest.TestCase):
         self.assertEqual(report["status"], "completed")
         self.assertEqual(report["counts"]["grouped_resources"], 1)
 
-    def test_urn_forward_references_and_bundle_metadata(self):
+    def test_urn_forward_references_keep_bundle_lookup_context(self):
         self.write(bundle(("urn:uuid:e", resource("Encounter", "e", subject={"reference": "urn:uuid:p"})),
                           ("urn:uuid:p", resource("Patient", "p")), total=2))
         report = self.run_ingest()
         self.assertEqual(report["reference_status"], {"resolved": 1})
         self.assertEqual(report["counts"]["grouped_resources"], 2)
-        self.assertEqual(json.loads(self.db.execute("SELECT metadata_json FROM bundles").fetchone()[0])["total"], 2)
-        self.assertEqual(self.db.execute("SELECT count(*) FROM bundle_entries").fetchone()[0], 2)
+        occurrences = self.db.execute("SELECT context,full_url,locator FROM occurrences ORDER BY id").fetchall()
+        self.assertEqual(occurrences, [("source:1:$", "urn:uuid:e", "$.entry[0].resource"),
+                                       ("source:1:$", "urn:uuid:p", "$.entry[1].resource")])
 
     def test_relative_references_with_absolute_server_namespace(self):
         self.write(bundle(("https://a.test/fhir/Patient/p", resource("Patient", "p")),
@@ -277,20 +278,21 @@ class IngestionTests(unittest.TestCase):
         self.assertIn("invalid_bundle_type", self.codes(report))
 
     def test_unknown_resources_profiles_and_extensions_are_retained(self):
-        self.write(resource("ResearchStudy", "r", meta={"profile": ["https://example.org/custom|0.2"]},
-                            modifierExtension=[{"url": "https://example.org/meaning", "valueBoolean": True}]))
+        value = resource("ResearchStudy", "r", meta={"profile": ["https://example.org/custom|0.2"]},
+                         modifierExtension=[{"url": "https://example.org/meaning", "valueBoolean": True}])
+        self.write(value)
         report = self.run_ingest()
-        self.assertEqual(report["scope"], {"other": 1})
-        self.assertEqual(report["profiles"][0]["version"], "0.2")
-        self.assertEqual(report["profiles"][0]["module"], "unrecognized")
-        self.assertEqual(report["extensions"][0]["modifier"], 1)
+        self.assertEqual(loads(self.db.execute("SELECT payload FROM resources").fetchone()[0]), value)
+        self.assertEqual(report["resource_types"], {"ResearchStudy": 1})
+        self.assertNotIn("outside_requested_scope", self.codes(report))
 
     def test_mii_profile_versions_are_not_fhir_versions(self):
         canonical = "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/PatientPseudonymisiert"
         self.write(resource("Patient", "p", meta={"profile": [canonical + "|2024.0.0", canonical]}))
         report = self.run_ingest()
-        self.assertEqual({p["version"] for p in report["profiles"]}, {"", "2024.0.0"})
-        self.assertEqual({p["module"] for p in report["profiles"]}, {"person"})
+        payload = loads(self.db.execute("SELECT payload FROM resources").fetchone()[0])
+        self.assertEqual(payload["meta"]["profile"], [canonical + "|2024.0.0", canonical])
+        self.assertEqual(report["status"], "completed")
         self.assertFalse(report["fhir"]["hospital_version_confirmed"])
 
     def test_quantitative_qualitative_and_component_observations(self):
@@ -299,10 +301,13 @@ class IngestionTests(unittest.TestCase):
                           (None, resource("Observation", "qual", code=coding, valueCodeableConcept={"text": "positive"})),
                           (None, resource("Observation", "bp", code=coding, component=[{"code": coding, "valueQuantity": {"value": 120, "code": "mm[Hg]"}}]))))
         report = self.run_ingest()
-        fields = report["observation_fields"]
-        self.assertEqual(sum(f["field_count"] for f in fields), 4)
-        self.assertTrue(any(f["value_type"] == "valueCodeableConcept" for f in fields))
-        self.assertTrue(any(f["unit_code"] == "mm[Hg]" for f in fields))
+        payloads = [loads(row[0]) for row in self.db.execute("SELECT payload FROM resources")]
+        values = {value["id"]: value for value in payloads}
+        self.assertEqual(report["resource_types"], {"Observation": 3})
+        self.assertEqual(values["q"]["valueQuantity"]["value"], Decimal("4.20"))
+        self.assertIn('4.20', self.db.execute("SELECT payload FROM resources WHERE logical_id='q'").fetchone()[0])
+        self.assertEqual(values["qual"]["valueCodeableConcept"], {"text": "positive"})
+        self.assertEqual(values["bp"]["component"][0]["valueQuantity"], {"value": 120, "code": "mm[Hg]"})
 
     def test_observation_value_conflict(self):
         self.write(resource("Observation", "o", valueString="a", valueBoolean=True))
@@ -312,7 +317,34 @@ class IngestionTests(unittest.TestCase):
         self.write(resource("CapabilityStatement", "cap", fhirVersion="5.0.0"))
         report = self.run_ingest()
         self.assertEqual(report["status"], "incomplete")
-        self.assertEqual(report["fhir"]["declarations_in_input"], {"5.0.0": 1})
+        self.assertIn("incompatible_fhir_version_declaration", self.codes(report))
+        self.assertEqual(loads(self.db.execute("SELECT payload FROM resources").fetchone()[0])["fhirVersion"], "5.0.0")
+
+    def test_minimal_index_does_not_duplicate_resource_inventories(self):
+        self.write({"resourceType": "Patient", "id": "p"})
+        report = self.run_ingest()
+        tables = {row[0] for row in self.db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        self.assertEqual(tables, {"run", "sources", "resources", "occurrences", "aliases",
+                                  "resource_references", "patient_memberships", "issues"})
+        self.assertEqual(self.db.execute("SELECT schema_version FROM run").fetchone()[0], 2)
+        self.assertEqual(report["schema_version"], 2)
+        self.assertEqual(report["status"], "completed")  # meta.profile is optional.
+        self.assertEqual(report["issues"], [])
+        self.assertTrue({"profiles", "extensions", "observation_fields", "scope"}.isdisjoint(report))
+        self.assertNotIn("declarations_in_input", report["fhir"])
+
+    def test_inventory_removal_keeps_structural_checks(self):
+        self.write(bundle(
+            (None, resource("Patient", "p", meta={"profile": "not-an-array"})),
+            (None, resource("Observation", "o", component=[None, {"valueString": "x", "dataAbsentReason": {}}])),
+            (None, resource("Observation", "bad", component={})),
+            (None, resource("ImplementationGuide", "ig", fhirVersion=["4.0.1", "5.0.0"])),
+        ))
+        report = self.run_ingest()
+        self.assertEqual(report["status"], "incomplete")
+        self.assertTrue({"invalid_profile_declaration", "invalid_observation_component",
+                         "invalid_observation_components", "observation_value_conflict",
+                         "incompatible_fhir_version_declaration"} <= self.codes(report))
 
     def test_history_pagination_and_tombstones_not_silently_accepted(self):
         self.write({"resourceType": "Bundle", "type": "history", "link": [{"relation": "next", "url": "https://example.org/next"}],
@@ -356,11 +388,13 @@ class IngestionTests(unittest.TestCase):
         self.assertIn("source_read_error", self.codes(self.run_ingest()))
 
     def test_cli_exit_codes_and_no_patient_values_in_console(self):
-        self.write(resource("Patient", "p", name=[{"family": "PRIVATE_NAME"}], meta={}))
+        self.write(resource("Patient", "p", name=[{"family": "PRIVATE_NAME"}],
+                            managingOrganization={"reference": "Organization/missing"}))
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             code = main(["ingest", "--input", str(self.source), "--output", str(self.output), "--strict"])
         self.assertEqual(code, 2)
+        self.assertEqual(json.loads((self.output / "report.json").read_text())["reference_status"], {"unresolved": 1})
         self.assertNotIn("PRIVATE_NAME", output.getvalue())
         self.assertNotIn("PRIVATE_NAME", (self.output / "report.json").read_text())
         with contextlib.redirect_stderr(output):

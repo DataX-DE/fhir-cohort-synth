@@ -1,7 +1,7 @@
 """Read-only checks for the ingestion snapshot used by perturbation.
 
 Check the resource graph and ownership needed to transform an export.
-Source FHIR profiles remain ingestion metadata, not a second statistics input.
+Source FHIR profiles remain inside resource payloads.
 """
 from contextlib import contextmanager
 import hashlib
@@ -34,7 +34,11 @@ def source_fingerprint(source):
 
 @contextmanager
 def open_source(path):
-    """Validate an existing schema-1 index before creating any output files."""
+    """Validate an existing index before creating any output files.
+
+    Schema 2 removed optional inventories. Both versions have the resource
+    graph used here, so older indexes can be read without a migration.
+    """
     path = Path(path).absolute()
     if path.is_symlink() or not path.is_file():
         raise InputError("Input must be an existing ingestion database file, not a symlink.")
@@ -45,8 +49,8 @@ def open_source(path):
         source.execute("PRAGMA query_only=ON")
         source.execute("BEGIN")
         runs = source.execute("SELECT status,schema_version,fhir_version FROM run").fetchall()
-        if len(runs) != 1 or runs[0]["schema_version"] != 1:
-            raise InputError("Unsupported ingestion database schema; expected version 1.")
+        if len(runs) != 1 or runs[0]["schema_version"] not in (1, 2):
+            raise InputError("Unsupported ingestion database schema; expected version 1 or 2.")
         run = runs[0]
         if run["status"] not in {"completed", "completed_with_warnings"}:
             raise InputError("The ingestion run is incomplete; use a completed index.")

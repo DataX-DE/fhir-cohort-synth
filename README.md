@@ -1,146 +1,81 @@
 # fhir-cohort-synth
 
-An offline tool for ingesting, statistically profiling and perturbing local FHIR exports.
-**Ingestion, complete recursive JSON extraction and exact field
-distributions are implemented, along with the `perturb` command.** Perturbation
-changes supported quantities, full dates and identity fields while retaining
-the source resource graph. The earlier independent cohort sampler has been
-retired. There is no current `generate` command.
+Create a **perturbed source-derived FHIR export** locally. The tool retains
+existing resources and relationships while changing supported quantities,
+full dates and identity fields. No model training or runtime downloads are needed.
+It does not provide a privacy or anonymization guarantee.
 
-The perturbation output is **perturbed source-derived data**, for local hospital use.
-The current scope covers structural and statistical fidelity; it makes no
-privacy, anonymization or differential-privacy guarantee. Local execution
-describes where processing occurs, not whether the data are anonymous.
-Privacy assessment is outside the current implementation scope. No model
-training is required.
+## Run an export
 
-The workflow is **ingest → profile → perturb → validate and report**.
-Ingestion resolves resource links and patient ownership. Profiling describes
-the original JSON fields. Perturbation reads the original resource trees and
-applies patient-specific changes using FHIR datatypes and supported units.
-
-## Run ingestion
-
-Requires **Python 3.11 or newer**, with its standard-library SQLite module.
-There are no third-party runtime dependencies and no installation step.
-Run from the repository directory:
+Requires **Python 3.11+**, using only the standard library and SQLite.
+From the repository directory:
 
 ```sh
-python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output local-data/demo
+python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output
 ```
 
-For a hospital export, use a new output directory outside the input directory:
+Try the entirely invented example:
 
 ```sh
-python3 fhir_synth.py ingest --input /path/to/fhir-export --output /path/to/ingested-cohort
+python3 fhir_synth.py run --input examples/mii-demo-bundle.json --output local-data/demo
 ```
 
-On Windows, use `py -3` in place of `python3`. A bundled runtime and hospital
-launcher are planned; this initial version requires Python to be installed.
-`python3 -m fhir_cohort_synth` is an equivalent entry point.
+On Windows, use `py -3` instead of `python3`. No installation step is needed if
+Python is already installed; a bundled runtime and launcher remain future work.
+The output directory must be new and outside any input directory.
 
-The example is entirely invented. It covers the resource shapes in the supplied
-hospital list, but is **not a validated MII example or a statistically generated
-cohort**. It declares a few known MII canonical URLs and otherwise base FHIR
-profiles; exact hospital profile versions have not been supplied.
+The command **indexes resources and patient links → perturbs → checks and reports**.
 
-## Extract and profile every JSON field
+```text
+new-output/
+  run.json                         # Overall status and phase
+  index/
+    cohort.sqlite                  # Original resources and resolved links
+    report.json
+    report.txt
+  perturbed/
+    perturbed.ndjson                # The output export
+    perturbation-state.sqlite      # Identity maps, parameters and recorded edits
+    perturbation-report.json       # Coverage and actual before/after changes
+```
 
-After ingestion, run:
+`run.json` is complete only after both stages finish, including output checks
+and reporting. Warnings are carried into the reports. An ingestion error stops
+the workflow before perturbation; a failure or interruption requires a new
+output directory. All outputs, including the original-data index, stay local.
+
+Defaults are **±2% quantity scaling, ±30 days and seed 42**. To change them:
 
 ```sh
-python3 fhir_synth.py profile --input local-data/demo/cohort.sqlite --output local-data/profile
+python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output \
+  --strength 0.02 --date-shift-days 30 --seed 42
 ```
 
-The command reads a completed ingestion index without changing it. It walks
-every nested object, array and value, including unfamiliar fields, while
-preserving parent links, array positions, value types and decimal precision.
-It requires a new output directory and uses the same standard-library runtime.
+Each patient shares one factor and one date offset. The same indexed snapshot,
+settings and seed produce the same records. Decimal rounding can leave small
+changes unchanged. IDs and resolved references are replaced consistently;
+clinical codes, booleans, narratives, attachments and unsupported fields remain
+unchanged. Shared or unassigned resources retain their quantities and dates.
+See [field handling and examples](docs/perturbation.md) for the exact rules.
 
-The invented example produces **23 resource roots, 425 nodes and 165 statistical
-field paths**. The profiler groups by root resource type and normalized path,
-such as `$["component"][*]["valueQuantity"]["value"]`. Individual array positions
-and concrete paths remain available in the database.
+## Run individual steps
 
-| Output | Contents |
-| --- | --- |
-| `field-occurrences.sqlite` | Every extracted node, source provenance and complete exact frequency tables |
-| `field-inventory.json` | Field/type inventory, parent-based presence, root-resource presence and container summaries |
-| `field-statistics.json` | The same context plus numeric quantiles, string cardinality, boolean counts and pointers to complete distributions |
-
-Frequency tables cover typed scalar values, object key sets, array lengths,
-array element types and type sequences, and string lengths. Numeric summaries
-use weighted nearest-rank percentiles at 5, 25, 50, 75 and 95 percent. Full value
-lists stay in SQLite; the JSON reports are summaries, not truncated substitutes
-for the stored distributions.
-
-Missing-field rates use existing parent objects: a missing `valueQuantity`
-does not also count as a missing `unit` within an existing quantity. Array-item
-counts and the number of resources containing a field are reported separately.
-Null, empty string, empty object and empty array remain distinct.
-
-Exact duplicate resource payloads count once. Contained resource JSON is visited
-under its original parent path; separately indexed contained rows are excluded
-from traversal. Bundle envelope/request metadata remains in the ingestion
-database and is outside this resource-root population.
-
-These are **generic JSON distributions**, without clinical grouping or value
-dependency modeling. For example, a path shared by several measurement types
-gets a marginal distribution across those types. The perturbation report
-separately compares measurements within their code, medication and unit contexts.
-Dates remain strings, numeric-looking strings are not converted, and units
-are not normalized. Parent/resource associations retain the required context.
-
-All profiling artifacts remain local source-derived data. Exact frequencies
-include source string values in SQLite. Console output and JSON reports omit
-scalar string examples, but paths, counts and numeric summaries can still be
-sensitive. This is not anonymization or synthetic generation.
-
-Profiling accepts `completed` and `completed_with_warnings` ingestion runs,
-carries their issue context, and rejects incomplete or unsupported indexes.
-Exit codes are `0` for completed profiling (including source warnings), `2`
-for failure, and `130` for an interrupted command. Success requires both JSON
-reports and a completed `run.status` in the output database. Failed/interrupted
-runs may retain local partial data; retry in a new directory.
-
-See [profiling data and queries](docs/profiling-schema.md) for the node layout,
-exact-frequency queries, denominator definitions and an example walkthrough.
-
-## Perturb existing records
-
-After ingestion and field profiling, run:
+The stage commands remain available when an index already exists:
 
 ```sh
-python3 fhir_synth.py perturb --input local-data/demo/cohort.sqlite --fields local-data/profile/field-occurrences.sqlite --output local-data/perturbed --strength 0.02 --date-shift-days 30 --seed 42
+python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output local-data/index
+python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output local-data/perturbed
 ```
 
-Each patient receives one factor between **0.98 and 1.02** for supported linear
-quantities and one date offset within **−30 to +30 days**. The engine uses bundled
-FHIR R4 4.0.1 datatype definitions, Decimal arithmetic and a small exact unit
-registry that includes MIMIC aliases. It replaces resource IDs, resolved
-references, Identifier values and HumanName strings. Clinical codes, booleans,
-narrative, attachments, unknown fields and unsupported units remain unchanged.
-Shared or unassigned resources retain their quantities and dates.
+The API is `perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42)`.
+The earlier `field_db` argument and CLI `--fields` option have been removed.
+There is no cross-database matching step because perturbation now has one input.
+The ingestion database still must be completed, supported and readable.
 
-The new directory contains `perturbed.ndjson`, `perturbation-state.sqlite` and
-`perturbation-report.json`. The report measures actual changes after rounding;
-small changes can round back to the original value. Exact local mappings and
-numeric distributions remain in SQLite. All files are source-derived, including
-text deliberately preserved in the NDJSON and original values in the audit trail.
-
-Validation verifies preserved content, structure, resolved reference targets
-and use of the shared patient parameters. It does not establish full FHIR or
-hospital-profile conformance. See the [worked example and implementation guide](docs/perturbation.md)
-for handling rules, limitations, API usage and report queries.
-The [MIMIC perturbation review](docs/validation-mimic-perturbation.md) records
-coverage across 928,935 resources and 13 resource types, including rounding effects.
-The [R4 example coverage audit](docs/validation-r4.md) records checks across all
-146 concrete R4 resource types, with external validator results and explicit gaps.
-The [MII 2026 profile audit](docs/validation-mii.md) tests the five packages relevant
-to Frankfurt's list, distinguishing introduced errors, existing failures and
-unresolved profile declarations.
-Inline resources outside containment (for example `Parameters.parameter.resource`)
-are preserved and reported; their identities and patient ownership are not managed.
+The perturbation report includes measurement-context before/after statistics
+and transformation coverage. The full-field `profile` command and its separate
+extraction database have been removed.
+No independent cohort sampler or `generate` command is present.
 
 ## Supported input
 
@@ -156,7 +91,7 @@ Export the referenced resource files locally first. No URLs in the input are
 fetched; search pagination links are reported for review.
 
 NDJSON is read incrementally, with ingestion checkpoints every 10,000 lines.
-Profiling checkpoints every 1,000 resource roots. Both writers use a bounded
+The SQLite writers use a bounded
 64 MiB SQLite page cache and temporary write-ahead logs to reduce disk churn;
 this is not a total process memory limit. Completed databases are checkpointed
 back to ordinary journal mode and require no WAL/SHM sidecars. Allow additional
@@ -183,10 +118,10 @@ yet been benchmarked.
 | Local location | `Location` referenced by encounters |
 
 Supporting and unrecognized resource types are also retained and counted.
-An unrecognized profile is retained, rather than silently replaced. Exact
-`meta.profile` canonical URLs and their optional `|version` suffixes are indexed
-separately. Extensions and modifier extensions remain in the payload and have
-a URL inventory. Ingestion itself transforms no codes, units, dates or patient identifiers.
+Profile declarations, including their `|version` suffixes, extensions, codes and
+units remain in the complete JSON payload. Ingestion creates no separate
+inventories for them and requires no recognized profile. It transforms no codes,
+units, dates or patient identifiers.
 
 ## Output
 
@@ -194,21 +129,25 @@ Each ingestion run creates a **new** directory containing:
 
 | File | Contents |
 | --- | --- |
-| `cohort.sqlite` | Source resources, provenance, Bundle metadata, profile inventory, reference graph, patient membership and detailed issues |
-| `report.json` | Machine-readable counts, profile/version inventory, observation code/unit inventory and issue totals |
+| `cohort.sqlite` | Source resource JSON, identities, source locations, reference graph, patient membership and processing issues |
+| `report.json` | Resource and patient counts, reference status and issue totals |
 | `report.txt` | A short readable status report |
 
 **The SQLite database contains the original patient data. It is not synthetic
 or anonymized.** Keep the entire output on the hospital's approved local
-storage. Console messages and reports omit patient names, IDs, clinical values,
-literal references and source file paths, but aggregate counts and profile,
-extension, code and unit strings are not privacy-protected. Keep reports local
-too until reviewed. POSIX output permissions are directory `0700`, files `0600`;
+storage. Ingestion reports omit patient names, IDs, clinical values, literal
+references and source paths. Aggregate counts are still source-derived; keep
+reports local until reviewed. POSIX output permissions are directory `0700`, files `0600`;
 Windows relies on the destination's access controls.
 
 Source files are read only. Existing output directories are never overwritten.
 A missing report, or `run.status = 'in_progress'` in SQLite, indicates an
 interrupted run. Use a new output directory to retry.
+
+New ingestion indexes use schema version 2, with eight tables for resource
+storage, lookup and processing checks. Schema version 1 indexes remain readable
+by perturbation without modification. The perturbation state database retains
+identity mappings, patient parameters, recorded edits and before/after statistics.
 
 ## Reference resolution and patient grouping
 
@@ -232,7 +171,7 @@ If an export from **one known server** contains absolute references but omits
 entry full URLs, supply that server's base explicitly:
 
 ```sh
-python3 fhir_synth.py ingest --input /path/to/export --output /path/to/new-index \
+python3 fhir_synth.py run --input /path/to/export --output /path/to/new-output \
   --base-url https://example.invalid/fhir
 ```
 
@@ -269,20 +208,20 @@ invariants, clinical plausibility or chronological order. Full validation needs
 the hospital's exact profile packages, pinned and bundled for offline use.
 
 - `completed`: ingestion checks passed.
-- `completed_with_warnings`: inspect missing profiles, unresolved references,
-  unassigned records and other warnings before extracting statistics.
+- `completed_with_warnings`: inspect unresolved references, unassigned records
+  and other warnings before perturbation.
 - `incomplete`: errors occurred; successfully parsed resources are retained for
-  local diagnosis, but the index is not ready for statistical extraction.
+  local diagnosis, but the index is not ready for perturbation.
 
 Exit code is `0` for completion (including warnings), `2` for errors or invalid
 arguments, and `130` for an interrupted command. Add `--strict` to also return
 `2` for warnings. A zero exit code is
 not a privacy guarantee, proof of export completeness or profile conformance.
 History Bundles and entries without resources are reported as unsupported
-snapshot inputs. Resource-free entries and Bundle/entry metadata are retained
-in the database for inspection.
+snapshot inputs. Bundle envelopes and request/response/search metadata remain
+in the original export. The index retains entry resource payloads, full URLs and
+lookup contexts needed to resolve references; it does not archive the envelope.
 
-Generic profiling provides exact field distributions from completed indexes.
 Perturbation applies coordinated transformations using FHIR datatype definitions
 and the source resource graph. See the [implementation status](docs/implementation-plan.md).
 Separate development tools run the external HL7 validator on public
@@ -295,24 +234,32 @@ requires its exact deployed profile packages.
 Start with the [code walkthrough](docs/code-walkthrough.md) for one Observation's
 journey from input JSON to output, the key terms and the reading order.
 
-To follow the code, start with `ingest()` in
+Start with `run_export()` in [`workflow.py`](fhir_cohort_synth/workflow.py) for the
+hospital command. Then follow `ingest()` in
 [`ingest.py`](fhir_cohort_synth/ingest.py). Its numbered comments describe the
-whole run. Then read the matching phases in [`store.py`](fhir_cohort_synth/store.py):
+whole run. [`store.py`](fhir_cohort_synth/store.py) connects four explicit phases:
 `add_document()` → `resolve()` → `group_patients()` → `report()`.
-The module and method docstrings explain the database IDs, reference scopes
-and patient-grouping rules. [`cli.py`](fhir_cohort_synth/cli.py) handles arguments
-and exit codes; `jsonio.py` and `profiles.py` contain the smaller helpers.
+Follow only the part you want to review:
 
-For profiling, start at `profile_index()` in
-[`profiling.py`](fhir_cohort_synth/profiling.py). It calls the generic walker in
-[`json_fields.py`](fhir_cohort_synth/json_fields.py), stores the nodes through
-[`field_store.py`](fhir_cohort_synth/field_store.py), then computes distributions
-and report fragments in [`field_statistics.py`](fhir_cohort_synth/field_statistics.py).
+| File | Responsibility |
+| --- | --- |
+| [`resource_store.py`](fhir_cohort_synth/resource_store.py) | Unpack Bundles, save resource payloads and references, check structure |
+| [`references.py`](fhir_cohort_synth/references.py) | Match stored reference text to a unique target |
+| [`patient_groups.py`](fhir_cohort_synth/patient_groups.py) | Assign patient ownership through resolved links |
+| [`schema.py`](fhir_cohort_synth/schema.py) | Define the ingestion database tables and indexes |
+| [`store.py`](fhir_cohort_synth/store.py) | Own the connection, call these phases and summarize the index |
+
+These modules share one connection; ingestion controls commits and closing.
+Their comments explain database IDs, reference scopes and patient grouping.
+[`cli.py`](fhir_cohort_synth/cli.py) handles arguments
+and exit codes; `jsonio.py` preserves decimal precision when reading and writing JSON.
 
 For perturbation, start at `perturb()` in
 [`perturbation.py`](fhir_cohort_synth/perturbation.py). Datatype traversal lives in
 `fhir_types.py`, scalar transformations in `perturbation_handlers.py`, and the
 SQLite audit trail and distribution summaries in `perturbation_store.py`.
+`perturbation_report.py` builds the report; `cohort.py` owns shared read-only
+source checks.
 
 ```sh
 python3 -m unittest discover -s tests -v

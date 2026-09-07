@@ -4,9 +4,10 @@ Start reading at ``ingest()`` for the overall flow:
     discover files -> parse and store resources -> resolve links -> group patients
     -> write reports.
 
-This module handles files and the run lifecycle. ``store.py`` handles FHIR
-identities, relationships and SQLite queries. Neither module fetches URLs or
-modifies source files; the resulting index still contains source patient data.
+This module handles files and the run lifecycle. ``store.py`` exposes the
+database phases; resource_store.py, references.py and patient_groups.py implement
+them. Ingestion does not fetch URLs or modify source files; the resulting index
+still contains source patient data.
 """
 import gzip
 import json
@@ -147,7 +148,7 @@ def ingest(inputs, output, base_url=None):
     Expected data problems are recorded as issues, allowing valid resources to
     be inspected even in an incomplete run. Configuration and infrastructure
     failures propagate to the CLI. The caller checks the report status before
-    using an index for later statistical extraction.
+    using an index for perturbation.
     """
     # 1. Validate paths and create a private destination for the source data.
     base_url = normalize_base_url(base_url)

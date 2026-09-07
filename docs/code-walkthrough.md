@@ -14,6 +14,17 @@ Its helpers handle each phase.
 These modules live under `fhir_cohort_synth/`. `fhir_synth.py` is the launcher;
 `cli.py` parses options, calls the public functions and formats safe console errors.
 
+For ingestion details, `Store` is the small entry point. Its `add_document()`
+calls `ResourceStore` in `resource_store.py`; `resolve()` calls
+`references.resolve_references()`; `group_patients()` calls
+`patient_groups.group_patients()`. Each phase uses the same database connection
+and issue recorder. `schema.py` contains table definitions; `Store.report()`
+contains the summary queries. There is no inheritance between these modules.
+The index stores resource JSON, identities, reference scopes and patient
+membership. Profile, extension and measurement inventories have been removed;
+those fields remain in the JSON. The perturbation ledger still stores mappings,
+patient parameters, edits and before/after measurement statistics.
+
 ## One Observation through the pipeline
 
 Consider this invented resource together with its referenced `Patient/p1`:
