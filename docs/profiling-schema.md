@@ -7,7 +7,7 @@ ingestion database is opened read-only through one consistent read transaction.
 
 All outputs contain source-derived information. Exact string and numeric
 frequencies remain local in `field-occurrences.sqlite`. No synthetic samples,
-clinical interpretation or conditional value distributions are produced yet.
+clinical interpretation or joint value distributions are produced by this command.
 
 ## Data flow
 
@@ -148,7 +148,8 @@ WHERE f.resource_type = 'Observation'
 This is a marginal across that path, which may contain different assays or
 measurement concepts. It does not assert clinical comparability. Associated
 codes/units remain available in the same resource and parent-linked nodes for
-the later dependency layer.
+local inspection. Perturbation uses the original JSON and FHIR datatypes and
+reports its numeric comparisons within measurement and unit contexts.
 
 For example, preserve sibling component associations by joining on parent ID:
 
