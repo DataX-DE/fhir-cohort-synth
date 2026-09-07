@@ -12,7 +12,7 @@ outputs stay local; the result has no privacy or anonymization guarantee.
 python3 fhir_synth.py run \
   --input examples/mii-demo-bundle.json \
   --output local-data/demo \
-  --strength 0.02 --date-shift-days 30 --seed 42
+  --strength 0.10 --date-shift-days 30 --seed 42
 ```
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
@@ -34,17 +34,24 @@ from fhir_cohort_synth.perturbation import perturb
 summary = perturb(
     "local-data/demo/index/cohort.sqlite",
     "local-data/another-perturbed-run",
-    strength=0.02, date_shift_days=30, seed=42,
+    strength=0.10, date_shift_days=30, seed=42,
 )
 ```
 
 The same input snapshot, settings and seed give deterministic records. Strength
-must be finite and in `[0, 1)`; the day range must be a supported nonnegative
-integer. Zero disables that value transformation; identity replacement still
+sets the upper relative quantity change and must be finite and in `[0.01, 1)`,
+or zero to disable numeric changes. The minimum magnitude is fixed at `0.01`.
+The day range must be a supported nonnegative integer; zero disables date shifts.
+Identity replacement still
 runs. Reordering/re-ingesting an export can change its snapshot identities, so
 determinism is defined for the same indexed snapshot.
 
-Factors and offsets come from the configured ranges. Before/after measurement
+Each eligible quantity occurrence independently draws a magnitude uniformly
+between 1% and `strength` (default 10%), and an increase/decrease with equal
+probability. For example, `100.00` with a 4% increase becomes `104.00`; another
+occurrence with a 7% decrease becomes `93.00`. The seed, prepared root identity
+and concrete field path determine its draw, including individual array positions.
+Date offsets remain shared per patient. Before/after measurement
 statistics are calculated during perturbation; there is no separate full-field
 extraction or profiling stage.
 The earlier `field_db` API argument and `--fields` CLI option have been removed.
@@ -62,7 +69,7 @@ full FHIR or hospital-profile validation.
 
 | Fields | Handling |
 | --- | --- |
-| Eligible `Quantity.value` and `Distance.value` | Multiply by one factor per patient, uniformly selected in `1 ± strength` |
+| Eligible `Quantity.value` and `Distance.value` | Independently add or subtract 1% to `strength` of each value, then round |
 | `Age`, `Duration`, `Count`, standalone numbers | Preserve |
 | Full `date`, `dateTime`, `instant` | Apply one whole-day offset per patient; retain time, offset and fractional suffix |
 | Partial/invalid dates, time-only values | Preserve; report the handling |
@@ -98,9 +105,9 @@ Only exact system/code pairs listed in `fhir_cohort_synth/data/linear-units.json
 are eligible. This small registry covers mass, length, volume, pressure,
 frequency, concentration and flow, including MIMIC's unit namespace. Display
 text never determines support. Temperature, percentages, logarithmic, missing
-and unrecognized units stay unchanged. No unit conversion is performed: applying
-the same factor to equivalent linear measurements preserves their relationship
-before rounding. Numeric contexts retain ancestor/component codes, medication or substance
+and unrecognized units stay unchanged. No unit conversion is performed. Even
+equivalent or repeated measurements receive independent changes, so their ratios
+can change. Numeric contexts retain ancestor/component codes, medication or substance
 references, comparator and exact unit information. Different drugs and panels
 are therefore not pooled merely because a quantity shares the same JSON path
 and unit. Reference contexts use the original source literals; equivalent
@@ -124,17 +131,17 @@ dates, preserved extension dates, shared resources or comparisons across patient
 
 ## Worked example
 
-Suppose the prepared parameters for one patient are **factor `1.01`** and
-**offset `+7 days`**. These are illustrative parameters, not a promise about
-which values seed 42 will draw.
+Suppose three quantities independently draw **+4%, −7% and +2%**, while their
+patient's date offset is **+7 days**. These illustrate the calculation; seed 42
+does not necessarily draw these values.
 
 | Existing field | Before | After |
 | --- | --- | --- |
 | Encounter period start | `2020-01-01T09:00:00.000+01:00` | `2020-01-08T09:00:00.000+01:00` |
 | Encounter period end | `2020-01-03T09:00:00.000+01:00` | `2020-01-10T09:00:00.000+01:00` |
-| Observation quantity, UCUM `mg/dL` | `100.00` | `101.00` |
-| Repeated quantity for the same patient | `120.00` | `121.20` |
-| Component quantity, UCUM `kg` | `70.0` | `70.7` |
+| Observation quantity, UCUM `mg/dL` (+4%) | `100.00` | `104.00` |
+| Repeated quantity for the same patient (−7%) | `120.00` | `111.60` |
+| Component quantity, UCUM `kg` (+2%) | `70.0` | `71.4` |
 | Component quantity, UCUM `%` | `98` | `98` |
 | Clinical coding and quantity units | Existing objects | Identical objects |
 
@@ -167,8 +174,9 @@ and weighted nearest-rank percentiles at 5, 25, 50, 75 and 95 percent. Exact val
 frequencies live in SQLite, with decimals stored as text and ordered numerically.
 
 The validator reads the emitted NDJSON afresh, checks replacement identities
-and reference targets, and verifies the shared factors and offsets for changed
-values. Undoing the recorded changes must reproduce every source root's digest.
+and reference targets, reproduces each changed quantity's percentage draw, and
+verifies shared patient date offsets. Undoing the recorded changes must reproduce
+every source root's digest.
 This verifies that codes, booleans, arrays, empty/missing fields, unknown content
 and all other unrecorded fields are preserved. Adding a missing root ID is the
 only permitted added field.
@@ -181,8 +189,8 @@ count deduplicated roots once, independently of how many source files exist.
 
 This proves the specified transformations and preservation properties. It does
 not establish every clinical dependency, full FHIR conformance or unchanged
-cohort distributions. Shared scaling preserves ratios and series shape before
-rounding; rounding and different patient factors can alter aggregate statistics.
+cohort distributions. Independent numeric changes can alter ratios, measurement
+trends and aggregate statistics; before/after summaries measure the actual effects.
 No categorical randomization, trajectory generation or privacy certification
 is performed. Narrative, attachments and other source text remain present.
 
@@ -218,7 +226,7 @@ FROM field_actions GROUP BY resource_type, action;
 SELECT reason, sum(frequency) AS fields
 FROM field_actions GROUP BY reason ORDER BY fields DESC;
 
-SELECT patient_id, factor, days, minimum_days, maximum_days
+SELECT patient_id, days, minimum_days, maximum_days
 FROM patient_parameters;
 
 -- Context contents remain local source-derived strings.

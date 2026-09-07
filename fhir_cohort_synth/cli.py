@@ -68,7 +68,7 @@ def main(argv=None):
     command.add_argument("--output", required=True, help="New output directory.")
     # Both entry points call the same perturbation engine and share its defaults.
     for subcommand in (run, command):
-        subcommand.add_argument("--strength", default="0.02", help="Maximum relative quantity scaling, in [0,1); default 0.02.")
+        subcommand.add_argument("--strength", default="0.10", help="Maximum independent +/- quantity change, in [0.01,1); minimum 0.01, default maximum 0.10. Use 0 to disable.")
         subcommand.add_argument("--date-shift-days", type=int, default=30, help="Maximum absolute patient date offset; default 30 days.")
         subcommand.add_argument("--seed", type=int, default=42, help="Deterministic local transformation seed; default 42.")
     args = parser.parse_args(argv)

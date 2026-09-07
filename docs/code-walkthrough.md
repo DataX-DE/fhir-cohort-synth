@@ -55,13 +55,14 @@ Consider this invented resource together with its referenced `Patient/p1`:
    the Patient target. `Store.group_patients()` assigns this Observation to it.
    This separate pass allows the Patient to appear later in the export.
 3. **Prepare changes.** `_prepare_identities()` allocates replacement IDs for
-   every target and a factor per patient. `_prepare_date_offsets()` checks all
+   every target. `_prepare_date_offsets()` checks all
    supported dates before choosing a shared offset that fits calendar bounds.
-   This uses the ingestion database directly. Factors and offsets come from
-   the configured ranges.
+   This uses the ingestion database directly.
 4. **Edit supported slots.** `TypeIndex.walk()` resolves `valueQuantity` to
    Quantity and its `value` to decimal. `Handlers.apply()` checks the exact unit
-   system/code and patient ownership. With an illustrative factor `1.01` and
+   system/code and patient ownership, then draws a separate signed percentage
+   for this quantity using the root identity and concrete field path. Repeated
+   values and components draw independently. With an illustrative factor `1.01` and
    offset `+7`, the value becomes `70.70` and the date becomes
    `2020-01-08T09:00:00.000+01:00`. These are illustrative parameters, not a
    prediction of the seed's draw. `_rewrite_reference()` points the subject at

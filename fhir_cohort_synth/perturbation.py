@@ -8,6 +8,7 @@
 5. Write statistical reports before recording completion.
 """
 from collections import defaultdict
+from contextlib import closing
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
@@ -20,7 +21,7 @@ from .export_files import plan_files, write_source_files
 from .ingest import InputError
 from .cohort import open_source, source_fingerprint
 from .jsonio import dumps, loads
-from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patient_days, patient_factor, scale, shift_date
+from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patient_days, quantity_factor, scale, shift_date
 from .perturbation_store import Ledger
 from .perturbation_report import build_report, write_report
 
@@ -38,14 +39,14 @@ def validate_settings(strength, date_shift_days, seed):
         if isinstance(strength, bool):
             raise ValueError()
         strength = Decimal(str(strength))
-        if not strength.is_finite() or not 0 <= strength < 1:
+        if not strength.is_finite() or not (strength == 0 or Decimal('0.01') <= strength < 1):
             raise ValueError()
         if type(date_shift_days) is not int or not 0 <= date_shift_days <= date.max.toordinal() - 1:
             raise ValueError()
         if type(seed) is not int:
             raise ValueError()
     except (ValueError, InvalidOperation):
-        raise PerturbationError('Use finite strength in [0,1), a nonnegative supported day range and an integer seed.') from None
+        raise PerturbationError('Use strength 0 or in [0.01,1), a nonnegative supported day range and an integer seed.') from None
     return {'strength': strength, 'date_shift_days': date_shift_days, 'seed': seed}
 
 
@@ -84,7 +85,7 @@ def _owner(slots, path):
 
 
 def _prepare_identities(source, ledger, settings):
-    """Allocate replacement IDs and one factor per Patient, including forward targets.
+    """Allocate replacement IDs and patient date ranges, including forward targets.
 
     resource_id/root_id/patient_id are ingestion database row IDs. old_id/new_id
     are FHIR strings. A missing patient_id means shared or unassigned ownership;
@@ -105,9 +106,8 @@ def _prepare_identities(source, ledger, settings):
                    (resource['id'], root_id, resource['patient_resource_id'], resource['resource_type'],
                     resource['logical_id'], new_id, None if resource['contained'] else '[]', resource['digest']))
         if resource['resource_type'] == 'Patient':
-            factor = patient_factor(settings['seed'], resource['identity'], settings['strength'])
-            db.execute('INSERT INTO patient_parameters VALUES (?,?,?,?,?,NULL)',
-                       (resource['id'], resource['identity'], dumps(factor),
+            db.execute('INSERT INTO patient_parameters VALUES (?,?,?,?,NULL)',
+                       (resource['id'], resource['identity'],
                         -settings['date_shift_days'], settings['date_shift_days']))
         if resource['id'] % 1000 == 0:
             db.commit()
@@ -237,16 +237,16 @@ def _rewrite_reference(field, owner, slots, edges, find_target, root_id):
 def _write(source, ledger, types, settings, destination):
     """Transform one source tree at a time, recording every edit before emission."""
     db = ledger.db
-    handlers = Handlers(settings['seed'])
+    handlers = Handlers(settings['seed'], settings['strength'])
 
     @lru_cache(maxsize=4096)
-    def parameters(patient):
+    def date_offset(patient):
         if patient is None:
-            return None, None
-        row = db.execute('SELECT factor,days FROM patient_parameters WHERE patient_id=?', (patient,)).fetchone()
+            return None
+        row = db.execute('SELECT days FROM patient_parameters WHERE patient_id=?', (patient,)).fetchone()
         if row is None:
             raise PerturbationError('Patient membership has no matching patient resource.')
-        return Decimal(row[0]), row[1]
+        return row[0]
 
     @lru_cache(maxsize=4096)
     def target(resource_id):
@@ -257,6 +257,9 @@ def _write(source, ledger, types, settings, destination):
         for number, root in enumerate(source.execute(ROOTS), 1):
             resource = loads(root['payload'])
             slots = _slots(db, root['id'], resource)
+            # Use a stable resource identity, not a database row ID or iteration
+            # position, so every field's random draw can be reproduced later.
+            root_identity = slots[()]['new_id']
             edges = _edges(source, slots)
             identity_paths = {path + (('key', 'id'),): owner for path, owner in slots.items()}
             # IDs can be absent on non-contained source roots. Add only this
@@ -269,8 +272,8 @@ def _write(source, ledger, types, settings, destination):
                                    None, owner['new_id'], 'resource_id_added', old_present=False)
             for field in types.walk(resource):
                 owner = _owner(slots, field.path)
-                factor, days = parameters(owner['patient_id'])
-                after, action, reason = handlers.apply(field, factor, days)
+                days = date_offset(owner['patient_id'])
+                after, action, reason = handlers.apply(field, root_identity, owner['patient_id'] is not None, days)
                 target_id = None
                 already_recorded = False
                 # Graph identities take precedence over ordinary datatype
@@ -298,7 +301,7 @@ def _write(source, ledger, types, settings, destination):
             stream.write(dumps(resource) + '\n')
             if number % 1000 == 0:
                 ledger.flush()
-    parameters.cache_clear()
+    date_offset.cache_clear()
     target.cache_clear()
     ledger.flush()
 
@@ -308,14 +311,18 @@ def _validate(ledger, destination):
 
     Undoing changes in this one output tree must reproduce the original SHA256
     digest, including every untouched category, array, text and unknown field.
-    Also check each remapped resource/link and each shared numeric/date parameter.
+    Also check each remapped resource/link, each field's numeric draw and each
+    patient's shared date offset.
     This is a transformation check, not the external HL7/profile validator.
     """
     db = ledger.db
+    settings = loads(db.execute('SELECT settings_json FROM run').fetchone()[0])
     roots = db.execute('SELECT * FROM resource_mappings WHERE resource_id=root_id ORDER BY resource_id')
     counts = {'roots_checked': 0, 'changes_checked': 0, 'references_checked': 0,
               'dates_checked': 0, 'quantities_checked': 0}
-    with destination.open(encoding='utf-8') as stream:
+    # Release the active SELECT even on a validation failure, so the failure
+    # handler can checkpoint SQLite and preserve the original diagnostic.
+    with closing(roots), destination.open(encoding='utf-8') as stream:
         for root, line in zip_longest(roots, stream):
             if root is None or line is None:
                 raise PerturbationError('Output resource population does not match the source.')
@@ -324,7 +331,7 @@ def _validate(ledger, destination):
                 obj = _slot(value, loads(mapping['path']))
                 if obj.get('id') != mapping['new_id'] or obj.get('resourceType') != mapping['resource_type']:
                     raise PerturbationError('Output identity or resource type does not match the prepared map.')
-            for change in db.execute('SELECT c.*,p.factor,p.days FROM changes c JOIN resource_mappings m ON m.resource_id=c.owner_id '
+            for change in db.execute('SELECT c.*,p.days FROM changes c JOIN resource_mappings m ON m.resource_id=c.owner_id '
                                      'LEFT JOIN patient_parameters p ON p.patient_id=m.patient_id WHERE c.root_id=? ORDER BY c.path',
                                      (root['root_id'],)):
                 path = loads(change['path'])
@@ -334,9 +341,10 @@ def _validate(ledger, destination):
                     raise PerturbationError('Output differs from its recorded change ledger.')
                 before = loads(change['old_json']) if change['old_present'] else None
                 after = parent[key]
-                if change['reason'] == 'patient_quantity_scale':
-                    if dumps(scale(before, Decimal(change['factor']))) != dumps(after):
-                        raise PerturbationError('Output quantity does not use its shared patient factor.')
+                if change['reason'] == 'field_quantity_scale':
+                    factor = quantity_factor(settings['seed'], root['new_id'], path, settings['strength'])
+                    if dumps(scale(before, factor)) != dumps(after):
+                        raise PerturbationError('Output quantity does not match its field-specific percentage change.')
                     counts['quantities_checked'] += 1
                 elif change['reason'] == 'patient_date_shift':
                     if shift_date(before, change['days']) != after:
@@ -359,7 +367,7 @@ def _validate(ledger, destination):
     return counts
 
 
-def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42):
+def perturb(cohort_db, output_dir, *, strength=0.10, date_shift_days=30, seed=42):
     """Create perturbed source-derived records and return the report header.
 
     The ingestion database must be complete and is opened read-only. We edit
@@ -383,7 +391,7 @@ def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42
         try:
             issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
             db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
-            # 1. Allocate every target ID and one factor/day offset per patient.
+            # 1. Allocate every target ID and one date offset per patient.
             _prepare_identities(source, ledger, settings)
             _prepare_date_offsets(source, ledger, types, settings)
             # 2. Write a private partial export and its field-by-field audit trail.

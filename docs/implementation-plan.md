@@ -8,10 +8,11 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
 
 1. Ingest local FHIR JSON/NDJSON exports, preserve payloads, resolve references
    and determine patient membership.
-2. Run `perturb` using bundled FHIR R4 datatype definitions, a shared quantity
-   factor and date offset per patient, and consistent identity replacement.
+2. Run `perturb` using bundled FHIR R4 datatype definitions, independent 1–10%
+   increases/decreases per eligible quantity, a shared date offset per patient,
+   and consistent identity replacement.
 3. Validate the written resource population, preserved content, resolved graph
-   and use of shared transformation parameters. Report numeric changes after
+   and use of field-specific numeric draws and patient date offsets. Report numeric changes after
    rounding, unchanged cases and unsupported fields.
 4. Run ingestion and perturbation together with `run --input ... --output ...`.
    The hospital does not need to manage stage inputs.
@@ -28,7 +29,9 @@ its automatic measurement contexts still separate before/after numeric reports.
 Ingestion schema 2 also removes the profile, extension, measurement and version
 inventories, hospital-scope classification and archived Bundle metadata.
 Reference contexts and source resource JSON remain. Perturbation accepts both
-schema 1 and schema 2 indexes; its change ledger and numeric reports are unchanged.
+schema 1 and schema 2 ingestion indexes. Perturbation state/report schema 2 removes
+the patient-level numeric factor and verifies independent field draws. Earlier
+outputs remain records of their original runs; no migration is performed.
 
 ## Deliberate first-version limits
 
@@ -40,8 +43,8 @@ schema 1 and schema 2 indexes; its change ledger and numeric reports are unchang
 - Full supported dates for one patient share an offset; partial, invalid and
   unsupported dates remain unchanged. Intervals involving unchanged dates or
   different patients are outside this guarantee.
-- Shared scaling preserves ratios and series shape before rounding, but does
-  not establish every clinical dependency or unchanged cohort distributions.
+- Independent quantity changes can alter ratios, series shape and cohort
+  distributions. The report measures the resulting numeric changes.
 - No categorical randomization, trajectory sampling, full FHIR validation or
   hospital-specific profile validation is included in the runtime commands.
 

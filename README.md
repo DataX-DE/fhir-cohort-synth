@@ -56,14 +56,18 @@ and use one `.ndjson` file per source Bundle; their envelopes are not rebuilt.
 Deduplicated roots stay in their first source file. The report's `export` section
 lists every output file, record count and checksum of its decompressed content.
 
-Defaults are **±2% quantity scaling, ±30 days and seed 42**. To change them:
+Defaults are **an independent 1–10% increase or decrease per eligible quantity,
+±30 days per patient and seed 42**. To change the upper percentage bound:
 
 ```sh
 python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output \
-  --strength 0.02 --date-shift-days 30 --seed 42
+  --strength 0.10 --date-shift-days 30 --seed 42
 ```
 
-Each patient shares one factor and one date offset. The same indexed snapshot,
+Each quantity occurrence draws its own magnitude and a 50/50 sign; repeated
+measurements and components vary independently. `--strength` sets the maximum
+fractional change, with a fixed 1% minimum; `0` disables numeric changes.
+Each patient still shares one date offset. The same indexed snapshot,
 settings and seed produce the same records. Decimal rounding can leave small
 changes unchanged. IDs and resolved references are replaced consistently;
 clinical codes, booleans, narratives, attachments and unsupported fields remain
@@ -79,7 +83,7 @@ python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output loca
 python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output local-data/perturbed
 ```
 
-The API is `perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42)`.
+The API is `perturb(cohort_db, output_dir, *, strength=0.10, date_shift_days=30, seed=42)`.
 The earlier `field_db` argument and CLI `--fields` option have been removed.
 There is no cross-database matching step because perturbation now has one input.
 The ingestion database still must be completed, supported and readable.

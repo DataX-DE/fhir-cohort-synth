@@ -1,6 +1,6 @@
 """Small, deterministic scalar transformations; no clinical resampling.
 
-A shared positive factor preserves a patient's eligible series before rounding.
+Each eligible quantity receives its own signed percentage change before rounding.
 We deliberately do not apply it to temperatures, percentages, logarithmic
 quantities or standalone numbers whose meaning the datatype does not establish.
 """
@@ -65,18 +65,28 @@ def label(seed, role, value):
     return hashlib.sha256(dumps([seed, role, value]).encode()).hexdigest()
 
 
-def patient_factor(seed, identity, strength):
-    """Draw one reproducible factor in [1 - strength, 1 + strength].
+def quantity_factor(seed, root_identity, path, strength):
+    """Draw a magnitude in [0.01, strength] and an independent +/- sign.
 
-    Deriving the random stream from this patient's identity avoids dependence
-    on the order in which patients are processed. Convert random bits directly
-    to Decimal so binary floating-point rounding never enters quantity math.
+    The root identity and concrete path give each occurrence its own random
+    stream: component[0] and component[1] do not share a draw, even if their
+    values match. Revisiting the same slot with the same seed reproduces it.
+    For example, a 4% increase returns 1.04; a 7% decrease returns 0.93.
+    Strength zero explicitly disables numeric changes. Otherwise validation
+    requires strength >= 0.01. Convert random bits directly to Decimal.
     """
-    rng = random.Random(label(seed, 'quantity-factor', identity))
+    if strength == 0:
+        return Decimal(1)
+    # Traversal uses tuples; SQLite JSON reads paths back as lists. Canonicalize
+    # both forms before hashing so validation recreates exactly the same draw.
+    path = [[kind, key] for kind, key in path]
+    rng = random.Random(label(seed, 'quantity-field-factor', [root_identity, path]))
     with localcontext() as ctx:
         ctx.prec = max(50, len(strength.as_tuple().digits) + 25)
         u = Decimal(rng.getrandbits(53)) / Decimal(2**53 - 1)
-        return Decimal(1) + strength * (2 * u - 1)
+        magnitude = Decimal('0.01') + (strength - Decimal('0.01')) * u
+        sign = 1 if rng.getrandbits(1) else -1
+        return Decimal(1) + sign * magnitude
 
 
 def patient_days(seed, identity, low, high):
@@ -111,8 +121,9 @@ def relative_change(before, after):
 class Handlers:
     """Decide scalar edits; resource IDs and graph links are handled by the writer."""
 
-    def __init__(self, seed):
+    def __init__(self, seed, strength):
         self.seed = seed
+        self.strength = strength
         registry = json.loads(files('fhir_cohort_synth').joinpath('data/linear-units.json').read_text())
         self.units = {(system, code) for system, codes in registry['systems'].items() for code in codes}
 
@@ -136,11 +147,11 @@ class Handlers:
             return 'invalid_quantity_value'
         return None
 
-    def apply(self, field, factor, days):
+    def apply(self, field, root_identity, patient_assigned, days):
         """Return (replacement, action, reason) without changing the input tree.
 
         Check preservation rules first, then identities, dates and quantities.
-        None for factor/days means no unique patient owns the resource. An
+        patient_assigned is false when no unique patient owns the resource. An
         'unsupported' action also preserves the value, but records a limitation.
         """
         value = field.value
@@ -183,8 +194,9 @@ class Handlers:
             reason = self.quantity_reason(field)
             if reason:
                 return value, 'unsupported', reason
-            if factor is None:
+            if not patient_assigned:
                 return value, 'preserved', 'shared_or_unassigned'
+            factor = quantity_factor(self.seed, root_identity, field.path, self.strength)
             result = scale(value, factor)
-            return result, 'changed' if dumps(result) != dumps(value) else 'preserved', 'patient_quantity_scale'
+            return result, 'changed' if dumps(result) != dumps(value) else 'preserved', 'field_quantity_scale'
         return value, 'preserved', 'clinical_or_other_content_preserved'

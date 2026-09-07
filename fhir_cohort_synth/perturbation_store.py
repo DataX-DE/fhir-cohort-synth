@@ -27,7 +27,7 @@ CREATE TABLE run (id INTEGER PRIMARY KEY CHECK(id=1), schema_version INTEGER NOT
  status TEXT NOT NULL, phase TEXT NOT NULL, settings_json TEXT NOT NULL,
  source_fingerprint TEXT NOT NULL, definitions_json TEXT NOT NULL, failure_code TEXT);
 CREATE TABLE patient_parameters (patient_id INTEGER PRIMARY KEY, identity TEXT NOT NULL,
- factor TEXT NOT NULL, minimum_days INTEGER NOT NULL, maximum_days INTEGER NOT NULL, days INTEGER);
+ minimum_days INTEGER NOT NULL, maximum_days INTEGER NOT NULL, days INTEGER);
 -- Integer IDs refer to ingestion rows; old_id/new_id are FHIR strings.
 -- path locates a resource within its root tree. NULL during preparation means
 -- the contained path has not yet been found; the root itself uses '[]'.
@@ -117,7 +117,7 @@ class Ledger:
         self.db.row_factory = sqlite3.Row
         self.db.create_collation('DECIMAL', compare_decimals)
         self.db.executescript(SCHEMA)
-        self.db.execute('INSERT INTO run VALUES (1,1,?,?,?,?,?,NULL)',
+        self.db.execute('INSERT INTO run VALUES (1,2,?,?,?,?,?,NULL)',
                         ('in_progress', 'preparation', dumps(settings), fingerprint, dumps(metadata)))
         self.db.commit()
         self.actions = Counter()

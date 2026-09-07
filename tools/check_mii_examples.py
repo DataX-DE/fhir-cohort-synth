@@ -81,7 +81,7 @@ def run(packages, output):
     output = Path(output).resolve()
     output.mkdir(mode=0o700)
     report = {'status': 'in_progress', 'fhir_version': '4.0.1',
-              'settings': {'strength': '0.02', 'date_shift_days': 30, 'seed': 42},
+              'settings': {'strength': '0.10', 'date_shift_days': 30, 'seed': 42},
               'selection': 'Every package/examples/*.json file; standalone files grouped per module; Bundles and invalid root IDs isolated.',
               'support': 'Invented minimal Patients at missing exact Patient reference IDs; official examples unchanged.',
               'packages': [], 'cases': []}
