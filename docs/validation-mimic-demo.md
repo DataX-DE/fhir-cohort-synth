@@ -1,5 +1,10 @@
 # MIMIC-IV FHIR demo validation
 
+This report records an earlier run that included the now-removed full-field
+profiler. The current workflow is ingestion → perturbation → checks and reporting.
+Historical counts and artifacts below are retained as validation evidence.
+
+
 The full local MIMIC-IV FHIR demo 2.1.0 passed ingestion, recursive extraction
 and exact statistical profiling on 7 September 2026. Both commands exited with
 code 0. All 71 automated tests and 24 independent dataset checks passed.

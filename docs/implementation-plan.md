@@ -8,19 +8,20 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
 
 1. Ingest local FHIR JSON/NDJSON exports, preserve payloads, resolve references
    and determine patient membership.
-2. Extract every nested JSON field and calculate exact marginal distributions.
-3. Run `perturb` using bundled FHIR R4 datatype definitions, a shared quantity
+2. Run `perturb` using bundled FHIR R4 datatype definitions, a shared quantity
    factor and date offset per patient, and consistent identity replacement.
-4. Validate the written resource population, preserved content, resolved graph
+3. Validate the written resource population, preserved content, resolved graph
    and use of shared transformation parameters. Report numeric changes after
    rounding, unchanged cases and unsupported fields.
+4. Run ingestion and perturbation together with `run --input ... --output ...`.
+   The hospital does not need to manage stage inputs.
 
 See [the perturbation guide](perturbation.md) for the API, command, exact field
 handling and worked example. The implementation uses Python's standard library
 and SQLite, with no runtime downloads or model training.
 
-The configured relationship-grouping API and conditional statistics command
-have been removed. Perturbation uses the ingestion reference graph directly;
+The full-field profiler, configured relationship-grouping API and conditional
+statistics command have been removed. Perturbation uses the ingestion reference graph directly;
 its automatic measurement contexts still separate before/after numeric reports.
 
 ## Deliberate first-version limits

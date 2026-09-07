@@ -1,5 +1,10 @@
 # R4 example coverage audit — 7 September 2026
 
+This report records an earlier run that included the now-removed full-field
+profiler. The current workflow is ingestion → perturbation → checks and reporting.
+Historical counts and artifacts below are retained as validation evidence.
+
+
 The coverage run exercises **all 146 concrete FHIR R4 resource types**. Official
 examples cover 141 types; five additional types use explicitly invented fixtures.
 This establishes tested coverage of these examples, not complete FHIR conformance

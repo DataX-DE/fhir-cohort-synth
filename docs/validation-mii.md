@@ -1,5 +1,10 @@
 # MII profile example audit — 7 September 2026
 
+This report records an earlier run that included the now-removed full-field
+profiler. The current workflow is ingestion → perturbation → checks and reporting.
+Historical counts and artifacts below are retained as validation evidence.
+
+
 The pipeline processed the usable examples from all five selected MII packages.
 Comparing the original and perturbed resources found **zero new error/fatal
 diagnostics** with the local HL7 validator. This is not a claim that every example

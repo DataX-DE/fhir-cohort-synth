@@ -1,33 +1,38 @@
 # Local FHIR perturbation
 
 `perturb` produces **perturbed source-derived data** from a completed ingestion
-index and its matching field profile. It preserves the resource population and
-graph while changing supported fields. No model is trained. Processing and all
+index. The `run` command creates that index and runs perturbation in one step.
+It preserves the resource population and graph while changing supported fields.
+No model is trained. Processing and all
 outputs stay local; the result has no privacy or anonymization guarantee.
 
 ## Run it
 
 ```sh
-python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output local-data/demo
-python3 fhir_synth.py profile --input local-data/demo/cohort.sqlite --output local-data/profile
-python3 fhir_synth.py perturb \
-  --input local-data/demo/cohort.sqlite \
-  --fields local-data/profile/field-occurrences.sqlite \
-  --output local-data/perturbed \
+python3 fhir_synth.py run \
+  --input examples/mii-demo-bundle.json \
+  --output local-data/demo \
   --strength 0.02 --date-shift-days 30 --seed 42
 ```
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
 module suffice. There are no runtime downloads or third-party dependencies.
-No relationship rules file is needed. The engine uses the ingestion reference
-graph directly and checks that the field profile describes the same snapshot.
+The export is `local-data/demo/perturbed/perturbed.ndjson`. Original indexed data
+and ingestion reports are in `local-data/demo/index/`. The overall `run.json`
+records completion only after ingestion, perturbation and output checks finish.
+The engine uses the ingestion reference graph directly.
+
+To reuse an existing index without ingesting the files again:
+
+```sh
+python3 fhir_synth.py perturb --input local-data/demo/index/cohort.sqlite --output local-data/another-perturbed-run
+```
 
 ```python
 from fhir_cohort_synth.perturbation import perturb
 
 summary = perturb(
-    "local-data/demo/cohort.sqlite",
-    "local-data/profile/field-occurrences.sqlite",
+    "local-data/demo/index/cohort.sqlite",
     "local-data/another-perturbed-run",
     strength=0.02, date_shift_days=30, seed=42,
 )
@@ -39,9 +44,13 @@ integer. Zero disables that value transformation; identity replacement still
 runs. Reordering/re-ingesting an export can change its snapshot identities, so
 determinism is defined for the same indexed snapshot.
 
-The field profile is required for the matching-input check. Its frequency tables
-do not choose the changes: factors and offsets come from the configured ranges.
-Before/after measurement statistics are calculated as part of perturbation.
+Factors and offsets come from the configured ranges. Before/after measurement
+statistics are calculated during perturbation; there is no separate full-field
+extraction or profiling stage.
+The earlier `field_db` API argument and `--fields` CLI option have been removed.
+
+The complete Python entry point is `workflow.run_export(inputs, output_dir, ...)`,
+with the same strength, date range and seed options plus an optional `base_url`.
 
 ## Field handling
 
@@ -167,11 +176,13 @@ rounding; rounding and different patient factors can alter aggregate statistics.
 No categorical randomization, trajectory generation or privacy certification
 is performed. Narrative, attachments and other source text remain present.
 
-The run completes only after output validation, statistical aggregation and
-report writing. Exit codes are 0 for completed runs (including warnings), 2 for
+The perturbation run completes only after output validation, statistical
+aggregation and report writing. Exit codes are 0 for completed runs (including warnings), 2 for
 failure and 130 for interruption. Check `run.status`; failed/interrupted runs
-retain local partial artifacts and require a new destination. A forcibly killed
-process can retain `in_progress`. Input databases are opened read-only. POSIX
+retain local partial artifacts and require a new destination. For the one-command
+workflow, check the top-level `run.json` too: it records the overall stage and
+status, including ingestion failures before perturbation starts. A forcibly killed
+process can retain `in_progress`. The input database is opened read-only. POSIX
 permissions are `0700` for the output directory and `0600` for files; completed
 databases need no WAL/SHM sidecars.
 
@@ -179,9 +190,11 @@ databases need no WAL/SHM sidecars.
 
 `fhir_types.py` resolves and walks datatypes. `perturbation_handlers.py` contains
 the small transformations. `perturbation.py` prepares mappings and date bounds,
-writes records, validates them and completes the run. `perturbation_store.py`
-stores audit data and aggregates distributions. Processing holds one resource
-tree at a time, bounded caches and bounded frequency batches; mappings and the
+writes records, validates them and completes the run. `perturbation_report.py`
+builds the human-readable summaries. `perturbation_store.py` stores audit data
+and aggregates distributions. `workflow.py` coordinates ingestion and
+perturbation; `cohort.py` supplies shared source checks. Processing holds one
+resource tree at a time, bounded caches and bounded frequency batches; mappings and the
 cohort stay in SQLite. Large runs may need substantial temporary WAL disk space.
 
 Useful local SQLite queries:

@@ -48,7 +48,7 @@ containing resource's exact target. External canonical URLs such as
 remain unresolved. Resolution never performs a network request.
 
 Resources embedded outside containment, such as `Parameters.parameter.resource`,
-remain in their parent's JSON payload and field profile. They do not have their
+remain in their parent's JSON payload and perturbed output. They do not have their
 own indexed identities or patient ownership; their references are excluded from
 the graph and perturbation preserves their complete subtrees with an explicit
 `embedded_resource_preserved` reason.

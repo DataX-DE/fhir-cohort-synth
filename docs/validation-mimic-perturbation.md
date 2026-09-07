@@ -1,5 +1,10 @@
 # MIMIC demo perturbation validation — 7 September 2026
 
+This report records an earlier run that included the now-removed full-field
+profiler. The current workflow is ingestion → perturbation → checks and reporting.
+Historical counts and artifacts below are retained as validation evidence.
+
+
 The local run completed with warnings for missing and unsupported quantity units.
 It processed **928,935 resource roots, 100 patients and all 13 resource types**.
 The output is **perturbed source-derived data**. No privacy assessment or full
