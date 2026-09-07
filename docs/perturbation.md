@@ -59,11 +59,13 @@ full FHIR or hospital-profile validation.
 | Partial/invalid dates, time-only values | Preserve; report the handling |
 | Root and contained resource IDs | Replace consistently; add an ID when a root lacks one |
 | Resolved literal references | Rewrite to `ResourceType/new-id` or `#new-id` for contained targets |
+| Local canonical fragments, e.g. `answerValueSet: "#choices"` | Rewrite to the same contained target's new ID; preserve external canonical URLs |
 | `Identifier.value` | Replace deterministically using its system and original value; preserve type/system |
 | `HumanName.text`, `family`, `given`, `prefix`, `suffix` | Replace nonempty existing strings with deterministic dummy labels |
 | Codes, codings, booleans, other strings | Preserve |
 | Narrative, attachments, unknown extension contents | Preserve and report |
 | Unknown fields/resource types | Preserve and report unsupported handling |
+| Inline resources outside containment, e.g. `Parameters.parameter.resource` | Preserve the complete subtree and report unsupported identity/ownership handling |
 
 An indexed identity or resolved reference is remapped even inside otherwise
 preserved content. This precedence preserves graph targets, including a
@@ -72,6 +74,16 @@ References that originally failed to resolve, were ambiguous, or resolved
 differently across duplicate occurrences are preserved with warnings. Logical
 references are not resolved by guessing; their Identifier values follow the
 Identifier rule. External URLs and narrative links are not automatically rewritten.
+The datatype is checked again before rewriting a reference, including when
+reading an older ingestion database that incorrectly indexed a URI field named
+`reference`. Reference-valued objects and Identifier-valued fields named
+`reference` receive their own datatype's handling.
+For `Identifier.system = "urn:ietf:rfc:3986"`, replacement values remain complete
+URIs: OID values use the UUID-derived `urn:oid:2.25.…` form and other values use
+`urn:uuid:…`. Bare replacement strings would violate the base Identifier rule.
+Local canonical links also work with older indexes: an exact contained ID is
+looked up only within that root's existing ownership map. Missing targets remain
+unchanged with an explicit warning.
 
 Only exact system/code pairs listed in `fhir_cohort_synth/data/linear-units.json`
 are eligible. This small registry covers mass, length, volume, pressure,

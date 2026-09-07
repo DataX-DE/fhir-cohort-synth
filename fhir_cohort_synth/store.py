@@ -18,6 +18,7 @@ import re
 import sqlite3
 from urllib.parse import urlsplit
 
+from .fhir_types import TypeIndex
 from .jsonio import dumps
 from .profiles import module_for, profile_parts, scope_for
 
@@ -123,27 +124,24 @@ def rest_parts(full_url):
     return full_url[:-len(tail)], f"{match[1]}/{match[2]}", match[3]
 
 
-def walk_fields(value, path=""):
-    """Yield (path, field name, value, containing object) for JSON fields.
+def walk_fields(value, types):
+    """Yield typed fields with schema-1 display paths, excluding containment.
 
-    Paths such as 'subject.reference' or 'component[0].code' let later code
-    distinguish a patient's subject link from other relationships. The parent
-    object helps recognize identifier-only Reference shapes. This is a JSON
-    walk, not validation against FHIR StructureDefinitions.
-
-    Skip contained payloads: add_document() indexes them separately with their
-    own reference scope, so their fields must not be attributed to the parent.
+    A field named 'reference' is not necessarily Reference.reference:
+    CarePlan.activity.reference is an object, Claim.related.reference is an
+    Identifier, and Expression.reference is a URI. Only the actual Reference
+    datatype supplies graph edges. Unknown JSON retains the existing fallback.
+    Contained payloads are indexed in their own owning resource below.
     """
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if key == "contained":
-                continue
-            child_path = f"{path}.{key}" if path else key
-            yield child_path, key, child, value
-            yield from walk_fields(child, child_path)
-    elif isinstance(value, list):
-        for index, child in enumerate(value):
-            yield from walk_fields(child, f"{path}[{index}]")
+    for field in types.walk(value, include_context=False):
+        if (not field.path or field.path[0] == ('key', 'contained')
+                or field.reason == 'embedded_resource_preserved'
+                or (not isinstance(field.key, str) and field.datatype != 'canonical')):
+            continue
+        path = ''
+        for kind, key in field.path:
+            path += ('.' if path else '') + key if kind == 'key' else f'[{key}]'
+        yield path, field
 
 
 class Store:
@@ -156,6 +154,7 @@ class Store:
     def __init__(self, path, base_url=None):
         """Initialize the schema and optional fallback server identity prefix."""
         self.base_url = base_url
+        self.types = TypeIndex()
         self.db = sqlite3.connect(path)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
@@ -343,14 +342,19 @@ class Store:
         # Store outgoing reference text once per occurrence, since the same
         # payload can appear in different Bundle contexts. URL inventories are
         # deduplicated per resource by their table constraints.
-        for path, key, value, container in walk_fields(resource):
-            if key == "reference":
+        for path, field in walk_fields(resource, self.types):
+            key, value, container = field.key, field.value, field.parent
+            unknown = field.datatype is None
+            local_canonical = field.datatype == 'canonical' and isinstance(value, str) and value.startswith('#') and len(value) > 1
+            if (key == "reference" and (field.parent_type == 'Reference' or unknown)) or local_canonical:
                 if isinstance(value, str) and value:
                     self.db.execute("INSERT INTO resource_references(occurrence_id,source_resource_id,path,literal,kind,status) VALUES (?,?,?,?,?,?)",
                                     (oid, rid, path, value, "literal", "pending"))
                 else:
                     self.issue("invalid_reference", "error", source_id, locator, rid, path)
-            elif key == "identifier" and isinstance(value, dict) and "reference" not in container and set(container) <= {"id", "extension", "type", "identifier", "display"}:
+            elif (key == "identifier" and isinstance(value, dict) and "reference" not in container
+                  and (field.parent_type == 'Reference' or
+                       (unknown and set(container) <= {"id", "extension", "type", "identifier", "display"}))):
                 # Reference.identifier names a target by business identifier,
                 # not by resource URL. Do not guess a match against patient IDs.
                 self.db.execute("INSERT INTO resource_references(occurrence_id,source_resource_id,path,kind,status) VALUES (?,?,?,?,?)",

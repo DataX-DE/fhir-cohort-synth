@@ -1,0 +1,5170 @@
+{
+  "date": "2026-09-07",
+  "classification": "Public MII examples with explicitly invented supporting Patients",
+  "run_directory": "local-data/mii-coverage-final",
+  "pipeline_status": {
+    "completed": 6,
+    "ingestion_rejected": 1
+  },
+  "package_examples": 201,
+  "packages": [
+    {
+      "dependencies": {
+        "de.basisprofil.r4": "1.5.x",
+        "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.x",
+        "hl7.fhir.r4.core": "4.0.1"
+      },
+      "example_files": 28,
+      "module": "base",
+      "name": "de.medizininformatikinitiative.kerndatensatz.base",
+      "sha256": "92c6afdb2a754be52a4dd628318ea180d673f95af8eb0185070ec84766b0bef1",
+      "version": "2026.0.0"
+    },
+    {
+      "dependencies": {
+        "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.0",
+        "hl7.fhir.r4.core": "4.0.1",
+        "hl7.fhir.uv.extensions.r4": "5.2.0",
+        "hl7.fhir.uv.ips": "2.0.0"
+      },
+      "example_files": 6,
+      "module": "laborbefund",
+      "name": "de.medizininformatikinitiative.kerndatensatz.laborbefund",
+      "sha256": "bc1f943729beda83a4f3ee7b8777f995815577b35fdc55ea0442c5eab5df194d",
+      "version": "2026.0.3"
+    },
+    {
+      "dependencies": {
+        "de.basisprofil.r4": "1.5.x",
+        "de.fhir.medication": "1.0.x",
+        "de.ihe-d.terminology": "3.0.1",
+        "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.x",
+        "hl7.fhir.r4.core": "4.0.1",
+        "hl7.fhir.uv.ips": "2.0.0"
+      },
+      "example_files": 25,
+      "module": "medikation",
+      "name": "de.medizininformatikinitiative.kerndatensatz.medikation",
+      "sha256": "af66a61db14a24b77e15ff577750063a44beb03b802c6e1f70ec8ed865868516",
+      "version": "2026.0.1"
+    },
+    {
+      "dependencies": {
+        "de.einwilligungsmanagement": "2.0.2",
+        "hl7.fhir.r4.core": "4.0.1"
+      },
+      "example_files": 6,
+      "module": "consent",
+      "name": "de.medizininformatikinitiative.kerndatensatz.consent",
+      "sha256": "3402dffbabee2788dd9dd07c16b4077ed2f7743e7464812138a09e587a24733a",
+      "version": "2026.0.0"
+    },
+    {
+      "dependencies": {
+        "de.basisprofil.r4": "1.5.4",
+        "de.gematik.isik": "5.1.0",
+        "de.medizininformatikinitiative.kerndatensatz.base": "2026.0.0",
+        "hl7.fhir.r4.core": "4.0.1"
+      },
+      "example_files": 136,
+      "module": "icu",
+      "name": "de.medizininformatikinitiative.kerndatensatz.icu",
+      "sha256": "9e04d49b3b11060263d813cf4e3b17a1546840215c9df75ab20d4095789074c5",
+      "version": "2026.0.2"
+    }
+  ],
+  "validation": {
+    "cached_packages": [
+      "de.basisprofil.r4#1.5.4",
+      "de.einwilligungsmanagement#2.0.2",
+      "de.fhir.medication#1.0.0",
+      "de.fhir.medication#1.0.7",
+      "de.gematik.isik#5.1.0",
+      "de.gematik.terminology#1.0.6",
+      "de.gematik.terminology#1.0.7",
+      "de.gematik.ti#1.1.1",
+      "de.ihe-d.terminology#3.0.1",
+      "de.medizininformatikinitiative.kerndatensatz.base#2026.0.0",
+      "de.medizininformatikinitiative.kerndatensatz.consent#2026.0.0",
+      "de.medizininformatikinitiative.kerndatensatz.icu#2026.0.2",
+      "de.medizininformatikinitiative.kerndatensatz.laborbefund#2026.0.3",
+      "de.medizininformatikinitiative.kerndatensatz.medikation#2026.0.1",
+      "de.medizininformatikinitiative.kerndatensatz.meta#2026.0.0",
+      "dvmd.kdl.r4#2025.0.0",
+      "dvmd.kdl.r4#2025.0.1",
+      "hl7.fhir.r4.core#4.0.1",
+      "hl7.fhir.r4.examples#4.0.1",
+      "hl7.fhir.uv.extensions#5.3.0",
+      "hl7.fhir.uv.extensions.r4#5.2.0",
+      "hl7.fhir.uv.extensions.r4#5.3.0",
+      "hl7.fhir.uv.extensions.r5#5.2.0",
+      "hl7.fhir.uv.extensions.r5#5.3.0",
+      "hl7.fhir.uv.ipa#1.1.0",
+      "hl7.fhir.uv.ips#2.0.0",
+      "hl7.fhir.uv.sdc#3.0.0",
+      "hl7.fhir.uv.smart-app-launch#2.0.0",
+      "hl7.fhir.uv.subscriptions-backport.r4#1.1.0",
+      "hl7.fhir.xver-extensions#0.1.0",
+      "hl7.terminology#7.3.0",
+      "hl7.terminology.r4#5.0.0",
+      "hl7.terminology.r4#6.2.0",
+      "hl7.terminology.r4#6.3.0",
+      "hl7.terminology.r4#6.5.0",
+      "hl7.terminology.r4#7.1.0",
+      "hl7.terminology.r4#7.2.0",
+      "hl7.terminology.r5#7.1.0"
+    ],
+    "cases": [
+      {
+        "name": "base",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "base-bundle-0",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "laborbefund",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "medikation",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "consent",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "icu",
+        "status": "completed",
+        "validator_exit_code": 0
+      },
+      {
+        "name": "icu-invalid-ids",
+        "status": "completed",
+        "validator_exit_code": 0
+      }
+    ],
+    "fhir_version": "4.0.1",
+    "http_access": false,
+    "official": {
+      "after_no_errors_and_declared_profiles_checked": 111,
+      "pairs": 207,
+      "pairs_with_new_errors": 0,
+      "pairs_with_unchecked_profiles": 64,
+      "before_no_errors": 165,
+      "after_no_errors": 165
+    },
+    "rejected_sources": [
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0006.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0010.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0011.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0007.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0000.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0001.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0002.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0003.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0012.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0004.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0008.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0009.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0005.json"
+      },
+      {
+        "case": "icu-invalid-ids",
+        "errors": 1,
+        "file": "official-0013.json"
+      }
+    ],
+    "status": "completed",
+    "support": {
+      "after_no_errors_and_declared_profiles_checked": 0,
+      "pairs": 7,
+      "pairs_with_new_errors": 0,
+      "pairs_with_unchecked_profiles": 0,
+      "before_no_errors": 7,
+      "after_no_errors": 7
+    },
+    "terminology_server": null,
+    "validator_sha256": "1106b9d58f9e363e47bea7c4fc065841e5fc91fe9d062775c3bfdd212bd653cc"
+  },
+  "cases": [
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 160,
+          "preserved": 1172,
+          "unsupported": 1
+        },
+        "patients": 2,
+        "root_resources": 27
+      },
+      "examples": [
+        "package/examples/Condition-mii-exa-diagnose-appendicitis.json",
+        "package/examples/Condition-mii-exa-diagnose-condition-elbow-contusion.json",
+        "package/examples/Condition-mii-exa-diagnose-condition-multiple-codings.json",
+        "package/examples/Condition-mii-exa-diagnose-mehrfachcodierung-primaercode.json",
+        "package/examples/Condition-mii-exa-diagnose-mehrfachcodierung-sekundaercode.json",
+        "package/examples/Condition-mii-exa-person-condition-todesursache.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-1.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-10.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-11.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-2.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-3.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-4.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-5.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-6.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-7.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-8.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-gesundheitseinrichtung-9.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-in-progress-status.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-onleave-status.json",
+        "package/examples/Encounter-mii-exa-fall-kontakt-unknown-status.json",
+        "package/examples/Observation-mii-exa-person-observation-vitalstatus-discharge.json",
+        "package/examples/Observation-mii-exa-person-observation-vitalstatus.json",
+        "package/examples/Patient-mii-exa-person-patient-1.json",
+        "package/examples/Patient-mii-exa-person-patient-pseudonymisiert.json",
+        "package/examples/Procedure-mii-exa-prozedur-imaging.json",
+        "package/examples/Procedure-mii-exa-prozedur-procedure-2.json",
+        "package/examples/Procedure-mii-exa-prozedur-procedure.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "logical_reference_unresolved",
+          "count": 23,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "base",
+      "name": "base",
+      "official_roots_before_deduplication": 27,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 160,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 41,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 0,
+        "references_checked": 50,
+        "roots_checked": 27
+      },
+      "version": "2026.0.0",
+      "invented_patient_count": 0,
+      "official_pairs": 27,
+      "before_with_errors": 0,
+      "after_with_errors": 0,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 27
+    },
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 142,
+          "preserved": 1003
+        },
+        "patients": 1,
+        "root_resources": 21
+      },
+      "examples": [
+        "package/examples/Bundle-mii-exa-base-test-data-bundle-1.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "logical_reference_unresolved",
+          "count": 21,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "base",
+      "name": "base-bundle-0",
+      "official_roots_before_deduplication": 21,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 142,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 38,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 0,
+        "references_checked": 45,
+        "roots_checked": 21
+      },
+      "version": "2026.0.0",
+      "invented_patient_count": 0,
+      "official_pairs": 21,
+      "before_with_errors": 0,
+      "after_with_errors": 0,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 21
+    },
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 36,
+          "preserved": 382,
+          "unsupported": 19
+        },
+        "patients": 1,
+        "root_resources": 7
+      },
+      "examples": [
+        "package/examples/DiagnosticReport-mii-exa-labor-laborbefund.json",
+        "package/examples/Observation-mii-exa-labor-laborwert-data-absent-reason.json",
+        "package/examples/Observation-mii-exa-labor-laborwert-range.json",
+        "package/examples/Observation-mii-exa-labor-laborwert-ratio.json",
+        "package/examples/Observation-mii-exa-labor-laborwert.json",
+        "package/examples/ServiceRequest-mii-exa-labor-laboranforderung.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "logical_reference_unresolved",
+          "count": 6,
+          "severity": "warning"
+        },
+        {
+          "code": "missing_profile_declaration",
+          "count": 1,
+          "severity": "warning"
+        },
+        {
+          "code": "unresolved_reference",
+          "count": 11,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "laborbefund",
+      "name": "laborbefund",
+      "official_roots_before_deduplication": 6,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 36,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 11,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 0,
+        "references_checked": 6,
+        "roots_checked": 7
+      },
+      "version": "2026.0.3",
+      "invented_patient_count": 1,
+      "official_pairs": 6,
+      "before_with_errors": 0,
+      "after_with_errors": 0,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 6
+    },
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 70,
+          "preserved": 1336,
+          "unsupported": 36
+        },
+        "patients": 1,
+        "root_resources": 26
+      },
+      "examples": [
+        "package/examples/List-mii-exa-medikation-list-admission.json",
+        "package/examples/List-mii-exa-medikation-medikationsliste-aktuelle-therapie.json",
+        "package/examples/List-mii-exa-medikation-medikationsliste-aufnahmemedikation.json",
+        "package/examples/Medication-mii-exa-medikation-medication-ass-100.json",
+        "package/examples/Medication-mii-exa-medikation-medication-caelyx.json",
+        "package/examples/Medication-mii-exa-medikation-medication-calcium.json",
+        "package/examples/Medication-mii-exa-medikation-medication-dolomo-nacht.json",
+        "package/examples/Medication-mii-exa-medikation-medication-dolomo-tag.json",
+        "package/examples/Medication-mii-exa-medikation-medication-dolomo.json",
+        "package/examples/Medication-mii-exa-medikation-medication-glucoseloesung.json",
+        "package/examples/Medication-mii-exa-medikation-medication-propofol.json",
+        "package/examples/Medication-mii-exa-medikation-medication-rezeptur.json",
+        "package/examples/Medication-mii-exa-medikation-medication-thiotepa.json",
+        "package/examples/MedicationAdministration-mii-exa-medikation-medication-administration.json",
+        "package/examples/MedicationRequest-mii-exa-medikation-medication-request-caelyx.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-caelyx.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-concor.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-hct.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-ibuprofen.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-intravenous-use.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-offset.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-periodisches-intervall.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement-zopiclon.json",
+        "package/examples/MedicationStatement-mii-exa-medikation-medication-statement.json",
+        "package/examples/Procedure-mii-exa-medikation-procedure-thiotepa.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "outside_requested_scope",
+          "count": 13,
+          "severity": "info"
+        },
+        {
+          "code": "missing_profile_declaration",
+          "count": 2,
+          "severity": "warning"
+        },
+        {
+          "code": "unresolved_reference",
+          "count": 4,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "medikation",
+      "name": "medikation",
+      "official_roots_before_deduplication": 25,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 70,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 14,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 3,
+        "references_checked": 27,
+        "roots_checked": 26
+      },
+      "version": "2026.0.1",
+      "invented_patient_count": 1,
+      "official_pairs": 25,
+      "before_with_errors": 4,
+      "after_with_errors": 4,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 20
+    },
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 111,
+          "preserved": 733,
+          "unsupported": 4
+        },
+        "patients": 2,
+        "root_resources": 8
+      },
+      "examples": [
+        "package/examples/Example_MII_Consent_DocumentReference.json",
+        "package/examples/Example_MII_Consent_Einwilligung.json",
+        "package/examples/Example_MII_Consent_Einwilligung_1.json",
+        "package/examples/Example_MII_Consent_Einwilligung_2.json",
+        "package/examples/Example_MII_Consent_Provenance.json",
+        "package/examples/Example_MII_Consent_ResultType_ConsentStatus.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "outside_requested_scope",
+          "count": 2,
+          "severity": "info"
+        },
+        {
+          "code": "missing_profile_declaration",
+          "count": 2,
+          "severity": "warning"
+        },
+        {
+          "code": "unresolved_reference",
+          "count": 4,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "consent",
+      "name": "consent",
+      "official_roots_before_deduplication": 6,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 111,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 95,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 0,
+        "references_checked": 8,
+        "roots_checked": 8
+      },
+      "version": "2026.0.0",
+      "invented_patient_count": 2,
+      "official_pairs": 6,
+      "before_with_errors": 4,
+      "after_with_errors": 4,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 2
+    },
+    {
+      "counts": {
+        "contained_resources": 0,
+        "field_actions": {
+          "changed": 511,
+          "preserved": 4333,
+          "unsupported": 141
+        },
+        "patients": 3,
+        "root_resources": 125
+      },
+      "examples": [
+        "package/examples/mii-exa-icu-bilanz-abnahme-haemofiltration-einzelmesswerte.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-drainage-generisch.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-fluessigkeit-gesamt.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-gallenfluessigkeit.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-magensonde.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-opdrainage.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-pankreasdrainage.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-stuhlgang.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-urin.json",
+        "package/examples/mii-exa-icu-bilanz-ausfuhr-wunddrainage.json",
+        "package/examples/mii-exa-icu-bilanz-blutverlust.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-abgepumpte-muttermilch.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-enterale-fluessigkeit.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-fluessigkeit-gesamt.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-muttermilch.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-oraler-fluessigkeit.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-saeuglingsnahrung.json",
+        "package/examples/mii-exa-icu-bilanz-einfuhr-spendermilch.json",
+        "package/examples/mii-exa-icu-bilanz-tagesbilanz-fluessigkeit.json",
+        "package/examples/mii-exa-icu-ecmo.json",
+        "package/examples/mii-exa-icu-ect-arterieller-druck-gemessen.json",
+        "package/examples/mii-exa-icu-ect-blutfluss-extrakorporaler-gasaustausch-gemessen.json",
+        "package/examples/mii-exa-icu-ect-dauer-extrakorporaler-gasaustausch-gemessen.json",
+        "package/examples/mii-exa-icu-ect-dauer-haemodialysesitzung-gemessen.json",
+        "package/examples/mii-exa-icu-ect-dm-ecmo-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-dm-ecmo-gemessen.json",
+        "package/examples/mii-exa-icu-ect-gasfluss-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-haemodialyse-blutfluss-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-haemodialyse-blutfluss-gemessen.json",
+        "package/examples/mii-exa-icu-ect-ionisiertes-kalzium-aus-nierenersatzverfahren-gemessen.json",
+        "package/examples/mii-exa-icu-ect-parameter-von-extrakorporalen-verfahren.json",
+        "package/examples/mii-exa-icu-ect-substituatfluss-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-substituatvolumen-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-venoeser-druck-gemessen.json",
+        "package/examples/mii-exa-icu-muv-arterieller-blutdruck.json",
+        "package/examples/mii-exa-icu-muv-atemfrequenz.json",
+        "package/examples/mii-exa-icu-muv-herzfrequenz.json",
+        "package/examples/mii-exa-icu-muv-herzzeitvolumen.json",
+        "package/examples/mii-exa-icu-muv-ideales-koerpergewicht.json",
+        "package/examples/mii-exa-icu-muv-intrakranieller-druck-(icp).json",
+        "package/examples/mii-exa-icu-muv-koerpergewicht-percentile-altersabhaengig.json",
+        "package/examples/mii-exa-icu-muv-koerpergewicht.json",
+        "package/examples/mii-exa-icu-muv-koerpergroesse-percentile-altersabhaengig.json",
+        "package/examples/mii-exa-icu-muv-koerpergroesse.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-achsel.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-atemwege.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-blut.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-brust.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-brustwirbelsaeule.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-gelenk.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-generisch.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-halswirbelsaeule.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-harnblase.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-kern.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-leiste.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-lendenwirbelsaeule.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-myokard.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-nasal.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-nasen-rachen-raum.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-rektal.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-speiseroehre.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-stirn.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-trommelfell.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-unter-der-zunge.json",
+        "package/examples/mii-exa-icu-muv-koerpertemperatur-vaginal.json",
+        "package/examples/mii-exa-icu-muv-kopfumfang.json",
+        "package/examples/mii-exa-icu-muv-linksatrialer-druck.json",
+        "package/examples/mii-exa-icu-muv-linksventri-herzzeitvolumen-durch-indikatorverd.json",
+        "package/examples/mii-exa-icu-muv-linksventrikulaerer-druck.json",
+        "package/examples/mii-exa-icu-muv-linksventrikulaerer-herzindex.json",
+        "package/examples/mii-exa-icu-muv-linksventrikulaeres-schlagvolumen.json",
+        "package/examples/mii-exa-icu-muv-linksventrikulaeres-schlagvolumenindex.json",
+        "package/examples/mii-exa-icu-muv-pulmonalarterieller-blutdruck.json",
+        "package/examples/mii-exa-icu-muv-pulmonalarterieller-wedge-blutdruck.json",
+        "package/examples/mii-exa-icu-muv-pulmonalvaskulaerer-widerstandsindex.json",
+        "package/examples/mii-exa-icu-muv-puls.json",
+        "package/examples/mii-exa-icu-muv-rechtsatrialer-druck.json",
+        "package/examples/mii-exa-icu-muv-rechtsventrikulaerer-druck.json",
+        "package/examples/mii-exa-icu-muv-sonstige-pulsatile-druecke-generisch.json",
+        "package/examples/mii-exa-icu-muv-systemischer-vaskulaerer-widerstandsindex.json",
+        "package/examples/mii-exa-icu-muv-zentralvenoeser-blutdruck.json",
+        "package/examples/mii-exa-icu-score-rass.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillenbefund.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillenform.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillengroesse.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillenlichtreaktion-direkt.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillenlichtreaktion-indirekt.json",
+        "package/examples/mii-exa-icu-untersuchung-pupillensymmetrie.json",
+        "package/examples/mii-exa-icu-vent-atemzugvolumen-einstellung-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-atemzugvolumen-waehrend-beatmung-gemessen.json",
+        "package/examples/mii-exa-icu-vent-beatmung.json",
+        "package/examples/mii-exa-icu-vent-beatmungsvolumen-pro-minute-maschineller-beatmung-gemessen.json",
+        "package/examples/mii-exa-icu-vent-beatmungszeit-auf-hohem-druck-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-beatmungszeit-auf-niedrigem-druck-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-dm-beatmung-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-dm-beatmung-gemessen.json",
+        "package/examples/mii-exa-icu-vent-druckdifferenz-beatmung-gemessen.json",
+        "package/examples/mii-exa-icu-vent-dynamische-kompliance-gemessen.json",
+        "package/examples/mii-exa-icu-vent-eingestellter-inspiratorischer-gasfluss.json",
+        "package/examples/mii-exa-icu-vent-einstellung-ausatmungszeit-beatmung-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-einstellung-einatmungszeit-beatmung-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-endexspiratorischer-kohlendioxidpartialdruck-gemessen.json",
+        "package/examples/mii-exa-icu-vent-exspiratorischer-gasfluss-gemessen.json",
+        "package/examples/mii-exa-icu-vent-exspiratorischer-sauerstoffpartialdruck-gemessen.json",
+        "package/examples/mii-exa-icu-vent-horowitz-in-arteriellem-blut-gemessen.json",
+        "package/examples/mii-exa-icu-vent-inspiratorische-sauerstofffraktion-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-inspiratorische-sauerstofffraktion-gemessen.json",
+        "package/examples/mii-exa-icu-vent-inspiratorischer-gasfluss-gemessen.json",
+        "package/examples/mii-exa-icu-vent-maximaler-beatmungsdruck-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-maximaler-beatmungsdruck-gemessen.json",
+        "package/examples/mii-exa-icu-vent-mechanische-atemfrequenz-beatmet-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-mittlerer-beatmungsdruck-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-mittlerer-beatmungsdruck-gemessen.json",
+        "package/examples/mii-exa-icu-vent-parameter-von-beatmung.json",
+        "package/examples/mii-exa-icu-vent-positiv-endexpiratorischer-druck-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-positiv-endexpiratorischer-druck-gemessen.json",
+        "package/examples/mii-exa-icu-vent-spontane-atemfrequenz-beatmet-gemessen.json",
+        "package/examples/mii-exa-icu-vent-spontane-mechanische-atemfrequenz-beatmet-gemessen.json",
+        "package/examples/mii-exa-icu-vent-spontanes-atemzugvolumen-gemessen.json",
+        "package/examples/mii-exa-icu-vent-spontanes-mechanisches-atemzugvolumen-waehrend-beatmung-gemessen.json",
+        "package/examples/mii-exa-icu-vent-unterstuetzungsdruck-beatmung-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-zeitverhaeltnis-ein-ausatmung-eingestellt.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "logical_reference_unresolved",
+          "count": 6,
+          "severity": "warning"
+        },
+        {
+          "code": "missing_profile_declaration",
+          "count": 3,
+          "severity": "warning"
+        },
+        {
+          "code": "unassigned_patient_resource",
+          "count": 3,
+          "severity": "warning"
+        },
+        {
+          "code": "unresolved_reference",
+          "count": 84,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "completed_with_warnings",
+      "module": "icu",
+      "name": "icu",
+      "official_roots_before_deduplication": 122,
+      "status": "completed",
+      "validation": {
+        "changed_dates_use_shared_offsets": true,
+        "changed_quantities_use_shared_factors": true,
+        "changes_checked": 511,
+        "consistently_resolved_reference_targets_verified": true,
+        "dates_checked": 223,
+        "preserved_content_and_structure_verified": true,
+        "quantities_checked": 42,
+        "references_checked": 115,
+        "roots_checked": 125
+      },
+      "version": "2026.0.2",
+      "invented_patient_count": 3,
+      "official_pairs": 122,
+      "before_with_errors": 34,
+      "after_with_errors": 34,
+      "unchecked_profiles": 64,
+      "no_errors_and_declared_profiles_checked": 35
+    },
+    {
+      "examples": [
+        "package/examples/mii-exa-icu-ect-blutfluss-durch-cardiovasculaeres-geraet-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-blutfluss-durch-cardiovasculaeres-geraet-gemessen.json",
+        "package/examples/mii-exa-icu-ect-blutfluss-extrakorporaler-gasaustausch-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-blutflussindex-extrakorporaler-gasaustausch-eingestellt.json",
+        "package/examples/mii-exa-icu-ect-blutflussindex-extrakorporaler-gasaustausch-gemessen.json",
+        "package/examples/mii-exa-icu-muv-linksventri-schlagvolumen-durch-indikatorverduennung.json",
+        "package/examples/mii-exa-icu-muv-linksventri-schlagvolumenindex-durch-indikatorverd.json",
+        "package/examples/mii-exa-icu-muv-linksventrikulaerer-herzindex-durch-indikatorverduennung.json",
+        "package/examples/mii-exa-icu-muv-o2saettigung-im-arteriellen-blut-durch-pulsoxymetrie.json",
+        "package/examples/mii-exa-icu-muv-o2saettigung-im-blut-postduktal-durch-pulsoxymetrie.json",
+        "package/examples/mii-exa-icu-muv-o2saettigung-im-blut-preduktal-durch-pulsoxymetrie.json",
+        "package/examples/mii-exa-icu-vent-atemwegsdruck-bei-mittlerem-expiratorischem-gasfluss-gemessen.json",
+        "package/examples/mii-exa-icu-vent-atemwegsdruck-bei-null-exspiratorischem-gasfluss-eingestellt.json",
+        "package/examples/mii-exa-icu-vent-atemwegsdruck-bei-null-exspiratorischem-gasfluss-gemessen.json"
+      ],
+      "ingestion_issues": [
+        {
+          "code": "invalid_resource_id",
+          "count": 14,
+          "severity": "error"
+        },
+        {
+          "code": "missing_profile_declaration",
+          "count": 1,
+          "severity": "warning"
+        },
+        {
+          "code": "missing_resource_id",
+          "count": 14,
+          "severity": "warning"
+        },
+        {
+          "code": "unresolved_reference",
+          "count": 16,
+          "severity": "warning"
+        }
+      ],
+      "ingestion_status": "incomplete",
+      "module": "icu",
+      "name": "icu-invalid-ids",
+      "official_roots_before_deduplication": 14,
+      "status": "ingestion_rejected",
+      "version": "2026.0.2",
+      "invented_patient_count": 1,
+      "official_pairs": 0,
+      "before_with_errors": 0,
+      "after_with_errors": 0,
+      "unchecked_profiles": 0,
+      "no_errors_and_declared_profiles_checked": 0
+    }
+  ],
+  "dependency_lock": {
+    "packages": {
+      "de.medizininformatikinitiative.kerndatensatz.base#2026.0.0": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.base/2026.0.0",
+        "sha256": "92c6afdb2a754be52a4dd628318ea180d673f95af8eb0185070ec84766b0bef1",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "de.basisprofil.r4": "1.5.x",
+          "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.x"
+        }
+      },
+      "hl7.fhir.r4.core#4.0.1": {
+        "source": "existing isolated R4 validation cache",
+        "dependencies": {}
+      },
+      "de.basisprofil.r4#1.5.4": {
+        "source": "https://packages.simplifier.net/de.basisprofil.r4/1.5.4",
+        "sha256": "9dc5392b5471060db07cf8ace2e8c81e99e3cee1e89f0b5febad362561fb739f",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.medizininformatikinitiative.kerndatensatz.meta#2026.0.0": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.meta/2026.0.0",
+        "sha256": "0722e8040e04f14680775fc710f626fd0312ab95791772b17007fccc6e7c8fb1",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.medizininformatikinitiative.kerndatensatz.laborbefund#2026.0.3": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.laborbefund/2026.0.3",
+        "sha256": "bc1f943729beda83a4f3ee7b8777f995815577b35fdc55ea0442c5eab5df194d",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.0",
+          "hl7.fhir.uv.ips": "2.0.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "hl7.fhir.uv.ips#2.0.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.ips/2.0.0",
+        "sha256": "b3964eba08ee699bc121b905c4290641e54dd34f2cf3b5cd3edeb08a40a66979",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.5.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0",
+          "hl7.fhir.uv.ipa": "1.1.0"
+        }
+      },
+      "hl7.terminology.r4#6.5.0": {
+        "source": "https://packages.simplifier.net/hl7.terminology.r4/6.5.0",
+        "sha256": "a28b638483a11df696ed92198276236d759e41c7a3a8960c9e7e7d0a1185bd06",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "hl7.fhir.uv.extensions.r4#5.2.0": {
+        "source": "existing isolated R4 validation cache",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "hl7.fhir.uv.ipa#1.1.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.ipa/1.1.0",
+        "sha256": "013b9f91683c496fc09eed93a8798b47dcbfb775587890fa3e11253a2409feef",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.2.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0",
+          "hl7.fhir.uv.smart-app-launch": "2.0.0"
+        }
+      },
+      "hl7.terminology.r4#6.2.0": {
+        "source": "existing isolated R4 validation cache",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "hl7.fhir.uv.smart-app-launch#2.0.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.smart-app-launch/2.0.0",
+        "sha256": "627e7a64e7abe130201fbae2ee7d2cb85d7d94972458d302c4d06d59e2c7d084",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.medizininformatikinitiative.kerndatensatz.medikation#2026.0.1": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.medikation/2026.0.1",
+        "sha256": "af66a61db14a24b77e15ff577750063a44beb03b802c6e1f70ec8ed865868516",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "de.basisprofil.r4": "1.5.x",
+          "de.medizininformatikinitiative.kerndatensatz.meta": "2026.0.x",
+          "hl7.fhir.uv.ips": "2.0.0",
+          "de.ihe-d.terminology": "3.0.1",
+          "de.fhir.medication": "1.0.x"
+        }
+      },
+      "de.ihe-d.terminology#3.0.1": {
+        "source": "https://packages.simplifier.net/de.ihe-d.terminology/3.0.1",
+        "sha256": "c0e90a5c42a50dbc02eceb4e6121a4b8e0cc208ab3ca6e0102d279d6a681b4b9",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.fhir.medication#1.0.7": {
+        "source": "https://packages.simplifier.net/de.fhir.medication/1.0.7",
+        "sha256": "eeaac78ee4be6231c9632006bf91f2f3844f6decc14a181ba80e0c6262628574",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "7.2.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "hl7.terminology.r4#7.2.0": {
+        "source": "https://packages.simplifier.net/hl7.terminology.r4/7.2.0",
+        "sha256": "f8c33fd30f8daf78f7496540a841e3fd20585279c0e785fb97394e44d6f24fee",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.fhir.uv.extensions.r4": "5.3.0"
+        }
+      },
+      "hl7.fhir.uv.extensions.r4#5.3.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.extensions.r4/5.3.0",
+        "sha256": "dfbc3ac95df91ed845cc6b60920d2875f679361fa0e16f227cee93c4a9ab2104",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "7.1.0"
+        }
+      },
+      "hl7.terminology.r4#7.1.0": {
+        "source": "https://packages.simplifier.net/hl7.terminology.r4/7.1.0",
+        "sha256": "1cb0cd5601972925fcd04f2c175d9cc63a9ecd9346a91a6e735f1a865dc5fba1",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "de.medizininformatikinitiative.kerndatensatz.consent#2026.0.0": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.consent/2026.0.0",
+        "sha256": "3402dffbabee2788dd9dd07c16b4077ed2f7743e7464812138a09e587a24733a",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "de.einwilligungsmanagement": "2.0.2"
+        }
+      },
+      "de.einwilligungsmanagement#2.0.2": {
+        "source": "https://packages.simplifier.net/de.einwilligungsmanagement/2.0.2",
+        "sha256": "8570752e595e459dea48af6410c74f0631d3774d2b6ee18b1b7f198c2caea7f2",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.medizininformatikinitiative.kerndatensatz.icu#2026.0.2": {
+        "source": "https://packages.simplifier.net/de.medizininformatikinitiative.kerndatensatz.icu/2026.0.2",
+        "sha256": "9e04d49b3b11060263d813cf4e3b17a1546840215c9df75ab20d4095789074c5",
+        "dependencies": {
+          "de.basisprofil.r4": "1.5.4",
+          "de.gematik.isik": "5.1.0",
+          "de.medizininformatikinitiative.kerndatensatz.base": "2026.0.0",
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.gematik.isik#5.1.0": {
+        "source": "https://packages.simplifier.net/de.gematik.isik/5.1.0",
+        "sha256": "6ee123e4798fc48b9c40fca8fe9729b1a1765f66f15e9317330f0650efee692f",
+        "dependencies": {
+          "hl7.fhir.uv.subscriptions-backport.r4": "1.1.0",
+          "de.basisprofil.r4": "1.5.4",
+          "de.ihe-d.terminology": "3.0.1",
+          "dvmd.kdl.r4": "2025.0.1",
+          "hl7.fhir.uv.sdc": "3.0.0",
+          "de.gematik.terminology": "1.0.6",
+          "de.fhir.medication": "1.0.0",
+          "de.gematik.ti": "1.1.1"
+        }
+      },
+      "hl7.fhir.uv.subscriptions-backport.r4#1.1.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.subscriptions-backport.r4/1.1.0",
+        "sha256": "083c7b36df03d26aedabaddd1feaee14771e8b62214844244c5db2a83c1343ea",
+        "dependencies": {
+          "hl7.terminology.r4": "5.0.0",
+          "hl7.fhir.r4.core": "4.0.0"
+        }
+      },
+      "hl7.terminology.r4#5.0.0": {
+        "source": "https://packages.simplifier.net/hl7.terminology.r4/5.0.0",
+        "sha256": "c863bef14eddb01d2884d8f14826b9b152f9fcef6b99e107025136af69ce2c18",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "dvmd.kdl.r4#2025.0.1": {
+        "source": "https://packages.simplifier.net/dvmd.kdl.r4/2025.0.1",
+        "sha256": "30923775afe0269c2f93ba7e9d6244cfaaea0a629a59a25e7a5667950a9e2347",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "hl7.fhir.uv.sdc#3.0.0": {
+        "source": "https://packages.simplifier.net/hl7.fhir.uv.sdc/3.0.0",
+        "sha256": "be5c3f0a7f82e072b40739e05fb68f3e58e44c9bd040cd901b1b55c62f23dca2",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.fhir.r4.examples": "4.0.1"
+        }
+      },
+      "hl7.fhir.r4.examples#4.0.1": {
+        "source": "https://packages.simplifier.net/hl7.fhir.r4.examples/4.0.1",
+        "sha256": "e18b31e7a52145a31f1f3f409cf6847583b08b7306cc4e9460a95a7b5efba930",
+        "dependencies": {}
+      },
+      "de.gematik.terminology#1.0.6": {
+        "source": "https://packages.simplifier.net/de.gematik.terminology/1.0.6",
+        "sha256": "03c908ade95bdc31104297b258681cfacb7fc02a3a6d7d7b9ff7fed9176c5e62",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.3.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0",
+          "dvmd.kdl.r4": "2025.0.0"
+        }
+      },
+      "hl7.terminology.r4#6.3.0": {
+        "source": "https://packages.simplifier.net/hl7.terminology.r4/6.3.0",
+        "sha256": "5e080e5343406f964022b086da713df374e410245c518166c5b1b93a800cdd71",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "dvmd.kdl.r4#2025.0.0": {
+        "source": "https://packages.simplifier.net/dvmd.kdl.r4/2025.0.0",
+        "sha256": "e6c839787154ebeef51ea9cdc12341304acc19d3ee54791ff36794206681de5e",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1"
+        }
+      },
+      "de.fhir.medication#1.0.0": {
+        "source": "https://packages.simplifier.net/de.fhir.medication/1.0.0",
+        "sha256": "100b84791ef74f6f5d129eb9d90bff4d3e9015368019b7b86323efdfb73d74c1",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.5.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0"
+        }
+      },
+      "de.gematik.ti#1.1.1": {
+        "source": "https://packages.simplifier.net/de.gematik.ti/1.1.1",
+        "sha256": "a85486ffd621c05d33c4fb1389c04060f33301990b0476592e68b66736d69f89",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.5.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0",
+          "de.basisprofil.r4": "1.5.4",
+          "de.gematik.terminology": "1.0.7"
+        }
+      },
+      "de.gematik.terminology#1.0.7": {
+        "source": "https://packages.simplifier.net/de.gematik.terminology/1.0.7",
+        "sha256": "d44b3269a0c7d5440dd12cef641918f596d784070ea246e8f0c2940cabe53935",
+        "dependencies": {
+          "hl7.fhir.r4.core": "4.0.1",
+          "hl7.terminology.r4": "6.5.0",
+          "hl7.fhir.uv.extensions.r4": "5.2.0",
+          "dvmd.kdl.r4": "2025.0.1"
+        }
+      }
+    },
+    "resolutions": [
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.base",
+        "requested": "2026.0.0",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.basisprofil.r4",
+        "requested": "1.5.x",
+        "resolved": "1.5.4"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.meta",
+        "requested": "2026.0.x",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.laborbefund",
+        "requested": "2026.0.3",
+        "resolved": "2026.0.3"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.meta",
+        "requested": "2026.0.0",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.uv.ips",
+        "requested": "2.0.0",
+        "resolved": "2.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.5.0",
+        "resolved": "6.5.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "hl7.fhir.uv.ipa",
+        "requested": "1.1.0",
+        "resolved": "1.1.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.2.0",
+        "resolved": "6.2.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "hl7.fhir.uv.smart-app-launch",
+        "requested": "2.0.0",
+        "resolved": "2.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.medikation",
+        "requested": "2026.0.1",
+        "resolved": "2026.0.1"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.basisprofil.r4",
+        "requested": "1.5.x",
+        "resolved": "1.5.4"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.meta",
+        "requested": "2026.0.x",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.uv.ips",
+        "requested": "2.0.0",
+        "resolved": "2.0.0"
+      },
+      {
+        "name": "de.ihe-d.terminology",
+        "requested": "3.0.1",
+        "resolved": "3.0.1"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.fhir.medication",
+        "requested": "1.0.x",
+        "resolved": "1.0.7"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "7.2.0",
+        "resolved": "7.2.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.3.0",
+        "resolved": "5.3.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "7.1.0",
+        "resolved": "7.1.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.consent",
+        "requested": "2026.0.0",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.einwilligungsmanagement",
+        "requested": "2.0.2",
+        "resolved": "2.0.2"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.icu",
+        "requested": "2026.0.2",
+        "resolved": "2026.0.2"
+      },
+      {
+        "name": "de.basisprofil.r4",
+        "requested": "1.5.4",
+        "resolved": "1.5.4"
+      },
+      {
+        "name": "de.gematik.isik",
+        "requested": "5.1.0",
+        "resolved": "5.1.0"
+      },
+      {
+        "name": "hl7.fhir.uv.subscriptions-backport.r4",
+        "requested": "1.1.0",
+        "resolved": "1.1.0"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "5.0.0",
+        "resolved": "5.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.0",
+        "resolved": "4.0.1",
+        "reason": "Validator explicitly pinned to R4 4.0.1; no fake 4.0.0 cache entry"
+      },
+      {
+        "name": "de.basisprofil.r4",
+        "requested": "1.5.4",
+        "resolved": "1.5.4"
+      },
+      {
+        "name": "de.ihe-d.terminology",
+        "requested": "3.0.1",
+        "resolved": "3.0.1"
+      },
+      {
+        "name": "dvmd.kdl.r4",
+        "requested": "2025.0.1",
+        "resolved": "2025.0.1"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.sdc",
+        "requested": "3.0.0",
+        "resolved": "3.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.r4.examples",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.gematik.terminology",
+        "requested": "1.0.6",
+        "resolved": "1.0.6"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.3.0",
+        "resolved": "6.3.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "dvmd.kdl.r4",
+        "requested": "2025.0.0",
+        "resolved": "2025.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "de.fhir.medication",
+        "requested": "1.0.0",
+        "resolved": "1.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.5.0",
+        "resolved": "6.5.0"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "de.gematik.ti",
+        "requested": "1.1.1",
+        "resolved": "1.1.1"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.5.0",
+        "resolved": "6.5.0"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "de.basisprofil.r4",
+        "requested": "1.5.4",
+        "resolved": "1.5.4"
+      },
+      {
+        "name": "de.gematik.terminology",
+        "requested": "1.0.7",
+        "resolved": "1.0.7"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      },
+      {
+        "name": "hl7.terminology.r4",
+        "requested": "6.5.0",
+        "resolved": "6.5.0"
+      },
+      {
+        "name": "hl7.fhir.uv.extensions.r4",
+        "requested": "5.2.0",
+        "resolved": "5.2.0"
+      },
+      {
+        "name": "dvmd.kdl.r4",
+        "requested": "2025.0.1",
+        "resolved": "2025.0.1"
+      },
+      {
+        "name": "de.medizininformatikinitiative.kerndatensatz.base",
+        "requested": "2026.0.0",
+        "resolved": "2026.0.0"
+      },
+      {
+        "name": "hl7.fhir.r4.core",
+        "requested": "4.0.1",
+        "resolved": "4.0.1"
+      }
+    ]
+  },
+  "no_runtime_engine_changes_in_this_audit": true,
+  "resource_types": {
+    "Condition": 11,
+    "Encounter": 24,
+    "Observation": 124,
+    "Patient": 3,
+    "Procedure": 9,
+    "DiagnosticReport": 1,
+    "ServiceRequest": 1,
+    "List": 3,
+    "Medication": 10,
+    "MedicationAdministration": 1,
+    "MedicationRequest": 1,
+    "MedicationStatement": 9,
+    "DocumentReference": 1,
+    "Consent": 4,
+    "Provenance": 1,
+    "DeviceMetric": 4
+  },
+  "pairs": [
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "base",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 7,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 7,
+      "case": "base",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "base",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Todesursache|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0008.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0009.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0010.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0011.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0012.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0013.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0014.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0015.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0016.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0017.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "base",
+      "file": "0018.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "base",
+      "file": "0019.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "base",
+      "file": "0020.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "base",
+      "file": "0021.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus|2026.0.0"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "base",
+      "file": "0022.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus|2026.0.0"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base",
+      "file": "0023.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient|2026.0.0"
+      ],
+      "resource_type": "Patient",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0024.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/PatientPseudonymisiert|2026.0.0"
+      ],
+      "resource_type": "Patient",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0025.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0026.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base",
+      "file": "0027.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base-bundle-0",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Patient|2026.0.0"
+      ],
+      "resource_type": "Patient",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base-bundle-0",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0008.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0009.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0010.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0011.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-fall/StructureDefinition/KontaktGesundheitseinrichtung|2026.0.0"
+      ],
+      "resource_type": "Encounter",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 7,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 7,
+      "case": "base-bundle-0",
+      "file": "0012.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base-bundle-0",
+      "file": "0013.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base-bundle-0",
+      "file": "0014.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "base-bundle-0",
+      "file": "0015.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "base-bundle-0",
+      "file": "0016.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-diagnose/StructureDefinition/Diagnose|2026.0.0"
+      ],
+      "resource_type": "Condition",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0017.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0018.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "base-bundle-0",
+      "file": "0019.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-prozedur/StructureDefinition/Procedure|2026.0.0"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "base-bundle-0",
+      "file": "0020.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus|2026.0.0"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "base-bundle-0",
+      "file": "0021.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-person/StructureDefinition/Vitalstatus|2026.0.0"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "laborbefund",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/DiagnosticReportLab|2026.0.3"
+      ],
+      "resource_type": "DiagnosticReport",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "laborbefund",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab|2026.0.3"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "laborbefund",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "laborbefund",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 7,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 7,
+      "case": "laborbefund",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ObservationLab|2026.0.3"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "laborbefund",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-labor/StructureDefinition/ServiceRequestLab|2026.0.3"
+      ],
+      "resource_type": "ServiceRequest",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "laborbefund",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "medikation",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/medikationsliste|2026.0.1"
+      ],
+      "resource_type": "List",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "medikation",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/medikationsliste|2026.0.1"
+      ],
+      "resource_type": "List",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "medikation",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/medikationsliste|2026.0.1"
+      ],
+      "resource_type": "List",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 8,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 8,
+      "case": "medikation",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 10,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 10,
+      "case": "medikation",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 21,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 21,
+      "case": "medikation",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 16,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 16,
+      "case": "medikation",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 16,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 16,
+      "case": "medikation",
+      "file": "0008.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 8,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 8,
+      "case": "medikation",
+      "file": "0009.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 12,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 12,
+      "case": "medikation",
+      "file": "0010.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 7,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 7,
+      "case": "medikation",
+      "file": "0011.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0012.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "medikation",
+      "file": "0013.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/Medication|2026.0.1"
+      ],
+      "resource_type": "Medication",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0014.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationAdministration|2026.0.1"
+      ],
+      "resource_type": "MedicationAdministration",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0015.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationRequest|2026.0.1"
+      ],
+      "resource_type": "MedicationRequest",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "medikation",
+      "file": "0016.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 23,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 23,
+      "case": "medikation",
+      "file": "0017.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "medikation",
+      "file": "0018.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 7,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 7,
+      "case": "medikation",
+      "file": "0019.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0020.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0021.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "medikation",
+      "file": "0022.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 23,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 23,
+      "case": "medikation",
+      "file": "0023.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "medikation",
+      "file": "0024.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/core/modul-medikation/StructureDefinition/MedicationStatement|2026.0.1"
+      ],
+      "resource_type": "MedicationStatement",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 2,
+      "case": "medikation",
+      "file": "0025.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "medikation",
+      "file": "0026.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "consent",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-documentreference"
+      ],
+      "resource_type": "DocumentReference",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "consent",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
+      ],
+      "resource_type": "Consent",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 13,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 13,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "consent",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
+      ],
+      "resource_type": "Consent",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 13,
+      "after_unchecked_profiles": [],
+      "after_warnings": 6,
+      "before_errors": 13,
+      "before_unchecked_profiles": [],
+      "before_warnings": 6,
+      "case": "consent",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
+      ],
+      "resource_type": "Consent",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "consent",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-provenance"
+      ],
+      "resource_type": "Provenance",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 34,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 34,
+      "case": "consent",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/modul-consent/StructureDefinition/mii-pr-consent-einwilligung"
+      ],
+      "resource_type": "Consent",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "consent",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "consent",
+      "file": "0008.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0001.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-abnahme-haemofiltration-einzelmesswerte"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0002.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-drainage-generisch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0003.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-fluessigkeit-gesamt"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0004.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-gallenfluessigkeit"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0005.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-magensonde"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0006.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-opdrainage"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 3,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 3,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0007.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-pankreasdrainage"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 6,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 6,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0008.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-stuhlgang"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0009.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-urin"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 5,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 5,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0010.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-ausfuhr-wunddrainage"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0011.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-blutverlust"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0012.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-abgepumpte-muttermilch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 5,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 5,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0013.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-enterale-fluessigkeit"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 7,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 7,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0014.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-fluessigkeit-gesamt"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0015.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-muttermilch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0016.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-oraler-fluessigkeit"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0017.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-saeuglingsnahrung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0018.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-einfuhr-spendermilch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 6,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 6,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0019.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-bilanz-tagesbilanz-fluessigkeit"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Procedure.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Procedure.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0020.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-extrakorporales-verfahren"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 6,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 6,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0021.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-arterieller-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0022.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-blutfluss-extrakorporaler-gasaustausch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0023.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-dauer-extrakorporaler-gasaustausch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0024.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-dauer-haemodialysesitzung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0025.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-devicemetric-eingestellte-gemessene-parameter-extrakorporale-verfahren"
+      ],
+      "resource_type": "DeviceMetric",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0026.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-devicemetric-eingestellte-gemessene-parameter-extrakorporale-verfahren"
+      ],
+      "resource_type": "DeviceMetric",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0027.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-gasfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0028.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-haemodialyse-blutfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0029.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-haemodialyse-blutfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0030.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-ionisiertes-kalzium-nierenersatzverfahren"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 6,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 6,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0031.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-parameter-von-extrakorporalen-verfahren"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0032.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-substituatfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0033.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-substituatvolumen"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0034.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-ect-venoeser-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 8,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 8,
+      "case": "icu",
+      "file": "0035.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-arterieller-blutdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0036.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-atemfrequenz"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0037.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-herzfrequenz"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0038.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-herzzeitvolumen"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0039.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-ideales-koerpergewicht"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0040.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-intrakranieller-druck-icp"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0041.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpergewicht-percentil-altersabhaengig"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0042.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-koerpergewicht"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0043.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpergroesse-percentil-altersabhaengig"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0044.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-koerpergroesse"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0045.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-achsel"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0046.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-atemwege"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0047.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-blut"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0048.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-brust"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0049.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-brustwirbelsaeule"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0050.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-gelenk"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0051.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-generisch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0052.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-halswirbelsaeule"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0053.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-harnblase"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0054.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-kern"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0055.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-leiste"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0056.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-lendenwirbelsaeule"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0057.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-myokard"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0058.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-nasal"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0059.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-nasen-rachen-raum"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0060.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-rektal"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0061.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-speiseroehre"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0062.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-stirn"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0063.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-trommelfell"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0064.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-unter-der-zunge"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0065.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-koerpertemperatur-vaginal"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0066.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-muv-kopfumfang"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 2,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0067.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksatrialer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0068.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksventri-herzzeitvolumen-durch-indikatorverd"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 2,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0069.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksventrikulaerer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0070.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksventrikulaerer-herzindex"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0071.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksventrikulaeres-schlagvolumen"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0072.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-linksventrikulaeres-schlagvolumenindex"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 2,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0073.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-pulmonalarterieller-blutdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0074.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-pulmonalarterieller-wedge-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0075.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-pulmonalvaskulaerer-widerstandsindex"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0076.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-puls"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 2,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0077.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-rechtsatrialer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 2,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0078.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-rechtsventrikulaerer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 3,
+      "after_unchecked_profiles": [],
+      "after_warnings": 5,
+      "before_errors": 3,
+      "before_unchecked_profiles": [],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0079.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-sonstige-pulsatile-druecke-generisch"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 1,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 1,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0080.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-systemischer-vaskulaerer-widerstandsindex"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0081.json",
+      "new_errors": [],
+      "profiles": [
+        "https://gematik.de/fhir/isik/StructureDefinition/sd-mii-icu-zentralvenoeser-blutdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 3,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 3,
+      "case": "icu",
+      "file": "0082.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-score-rass"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0083.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillenbefund"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0084.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillenform"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0085.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillengroesse"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0086.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillenlichtreaktion-direkt"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0087.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillenlichtreaktion-indirekt"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 2,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 2,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0088.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-untersuchung-pupillensymmetrie"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0089.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-atemzugvolumen-einstellung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0090.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-atemzugvolumen-waehrend-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Procedure.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Procedure.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0091.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-beatmung"
+      ],
+      "resource_type": "Procedure",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0092.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-beatmungsvolumen-pro-minute-maschineller"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0093.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-beatmungszeit-hohem-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0094.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-beatmungszeit-niedrigem-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0095.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-devicemetric-eingestellte-gemessene-parameter-beatmung"
+      ],
+      "resource_type": "DeviceMetric",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "after_warnings": 2,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "DeviceMetric.meta.profile[0]"
+      ],
+      "before_warnings": 2,
+      "case": "icu",
+      "file": "0096.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-devicemetric-eingestellte-gemessene-parameter-beatmung"
+      ],
+      "resource_type": "DeviceMetric",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0097.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-druckdifferenz-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0098.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-dynamische-kompliance"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0099.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-eingestellter-inspiratorischer-gasfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0100.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-einstellung-ausatmungszeit-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0101.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-einstellung-einatmungszeit-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0102.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-endexspiratorischer-kohlendioxidpartialdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0103.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-exspiratorischer-gasfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0104.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-exspiratorischer-sauerstoffpartialdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0105.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-horowitz-in-arteriellem-blut"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0106.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-inspiratorische-sauerstofffraktion-eingestellt"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0107.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-inspiratorische-sauerstofffraktion-gemessen"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0108.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-inspiratorischer-gasfluss"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0109.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-maximaler-beatmungsdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0110.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-maximaler-beatmungsdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 4,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 5,
+      "before_errors": 4,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0111.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-mechanische-atemfrequenz-beatmet"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0112.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-mittlerer-beatmungsdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0113.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-mittlerer-beatmungsdruck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0114.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-parameter-von-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0115.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-positiv-endexspiratorischer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0116.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-positiv-endexspiratorischer-druck"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 3,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 3,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0117.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-spontane-atemfrequenz-beatmet"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 3,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 3,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0118.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-spontane-mechanische-atemfrequenz-beatmet"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0119.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-spontanes-atemzugvolumen"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0120.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-spontanes-mechanisches-atemzugvolumen-waehrend"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 4,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 4,
+      "case": "icu",
+      "file": "0121.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-unterstuetzungsdruck-beatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "after_warnings": 5,
+      "before_errors": 0,
+      "before_unchecked_profiles": [
+        "Observation.meta.profile[0]"
+      ],
+      "before_warnings": 5,
+      "case": "icu",
+      "file": "0122.json",
+      "new_errors": [],
+      "profiles": [
+        "https://www.medizininformatik-initiative.de/fhir/ext/modul-icu/StructureDefinition/mii-pr-icu-vent-zeitverhaeltnis-ein-ausatmung"
+      ],
+      "resource_type": "Observation",
+      "support_fixture": false
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "icu",
+      "file": "0123.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "icu",
+      "file": "0124.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    },
+    {
+      "after_errors": 0,
+      "after_unchecked_profiles": [],
+      "after_warnings": 1,
+      "before_errors": 0,
+      "before_unchecked_profiles": [],
+      "before_warnings": 1,
+      "case": "icu",
+      "file": "0125.json",
+      "new_errors": [],
+      "profiles": [],
+      "resource_type": "Patient",
+      "support_fixture": true
+    }
+  ],
+  "harness_sha256": "f007a0b561b602d3963544f4ba17570c683536114c587f2b031c77740f87915e"
+}

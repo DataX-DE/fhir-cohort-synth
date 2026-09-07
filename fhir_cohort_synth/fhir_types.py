@@ -43,9 +43,11 @@ class TypeIndex:
         if document['fhir_version'] != '4.0.1' or actual != document['definitions_sha256']:
             raise ValueError('Invalid bundled datatype index')
         self.metadata = document
+        # Keep cached lookups on this index. A class-level cache retains entire
+        # indexes from earlier runs, which is costly in the all-resource audit.
+        self.child = lru_cache(maxsize=32768)(self._child)
 
-    @lru_cache(maxsize=32768)
-    def child(self, definition, anchor, key):
+    def _child(self, definition, anchor, key):
         elements = self.definitions.get(definition, {}).get('elements', {})
         companion = key.startswith('_')
         actual = key[1:] if companion else key
@@ -99,6 +101,12 @@ class TypeIndex:
                     definition = anchor = typ
                     if typ not in self.definitions:
                         reason = 'unknown_resource_type'
+                    elif kind != 'Bundle' and not (len(path) == 2 and path[0] == ('key', 'contained')):
+                        # Parameters.parameter.resource is an inline resource,
+                        # not a separately indexed root or contained resource.
+                        # Preserve it as one subtree until its own identities,
+                        # references and ownership have explicit index support.
+                        reason = 'embedded_resource_preserved'
                 if typ == 'Extension':
                     reason = reason or 'extension_contents_preserved'
                 if typ in {'Narrative', 'Attachment'}:

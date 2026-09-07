@@ -185,16 +185,27 @@ def _write(source, ledger, types, settings, destination):
                 after, action, reason = handlers.apply(field, factor, days)
                 target_id = None
                 already_recorded = False
+                local_canonical = (field.datatype == 'canonical' and isinstance(field.value, str)
+                                   and field.value.startswith('#') and len(field.value) > 1)
                 if field.path in identity_paths:
                     after = identity_paths[field.path]['new_id']
                     action, reason = 'changed', 'resource_id_replaced'
                     already_recorded = identity_paths[field.path]['old_id'] is None
                     if already_recorded:
                         reason = 'resource_id_added'
-                elif field.key == 'reference' and isinstance(field.value, str):
+                elif (((field.key == 'reference' and isinstance(field.value, str)
+                        and (field.parent_type == 'Reference' or field.datatype is None)) or local_canonical)
+                      and field.reason != 'embedded_resource_preserved'):
                     owner_path = field.path[:2] if field.path[:2] in slots else ()
                     key = (owner['resource_id'], _reference_path(field.path[len(owner_path):]), field.value)
                     resolutions = edges.get(key, set())
+                    if local_canonical and not resolutions:
+                        # Older indexes did not record canonical # links. Their
+                        # exact targets still exist in this root's contained map.
+                        # Do not search other roots or interpret external URLs.
+                        matches = [m for p, m in slots.items() if p and m['old_id'] == field.value[1:]]
+                        resolutions = ({('resolved', matches[0]['resource_id'])} if len(matches) == 1
+                                       else {('ambiguous' if matches else 'unresolved', None)})
                     if len(resolutions) == 1 and next(iter(resolutions))[0] == 'resolved':
                         target_id = next(iter(resolutions))[1]
                         mapped = target(target_id)
@@ -336,6 +347,7 @@ def perturb(cohort_db, field_db, output_dir, *, strength=0.02, date_shift_days=3
                                          'changed_dates_use_shared_offsets': True,
                                          'changed_quantities_use_shared_factors': True},
                           'limitations': ['No privacy or anonymization guarantee; output and mappings contain source-derived information.',
+                                          'Inline resources outside containment (such as Parameters.parameter.resource) are preserved without identity or patient transformations.',
                                           'No full FHIR, hospital-profile or clinical dependency validation.',
                                           'Unknown extensions/content and unresolved references may remain unchanged; identity/reference remapping takes precedence.',
                                           'Shared or unassigned resources retain quantities/dates. Partial and invalid dates remain unchanged.',

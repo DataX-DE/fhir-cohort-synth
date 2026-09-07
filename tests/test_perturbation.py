@@ -11,6 +11,7 @@ import sqlite3
 import tempfile
 import unittest
 from unittest.mock import patch
+from uuid import UUID
 
 from fhir_cohort_synth.cli import main
 from fhir_cohort_synth.fhir_types import TypeIndex
@@ -233,6 +234,112 @@ class PerturbationTests(unittest.TestCase):
         result = self.run_engine()
         self.assertEqual(result[1]['a.b']['reference'], 'Practitioner/' + result[2]['id'])
         self.assertEqual(result[1]['a']['b']['reference'], 'Practitioner/' + result[3]['id'])
+
+    def test_reference_named_objects_identifiers_and_uris_are_not_literal_links(self):
+        # Official Consent/ImplementationGuide examples exposed the object case.
+        # URI-valued fields must also stay unchanged even when their text happens
+        # to equal a locally resolvable resource reference.
+        self.prepare([
+            resource('Patient', 'p'),
+            resource('Consent', 'consent', patient={'reference': 'Patient/p'}, provision={
+                'actor': [{'reference': {'reference': 'Practitioner/practitioner'}}],
+                'data': [{'reference': {'reference': 'Patient/p'}}]}),
+            resource('ImplementationGuide', 'ig', fhirVersion=['4.0.1'], definition={
+                'resource': [{'reference': {'reference': 'Patient/p'}}]}),
+            resource('Claim', 'claim', related=[{'reference': {'system': 'urn:invented', 'value': 'claim-1'}}]),
+            resource('DetectedIssue', 'issue', reference='Patient/p'),
+            resource('Immunization', 'immunization', patient={'reference': 'Patient/p'},
+                     education=[{'reference': 'Patient/p'}]),
+            resource('PlanDefinition', 'plan', action=[{'condition': [{'expression': {
+                'language': 'text/fhirpath', 'reference': 'Patient/p'}}]}]),
+            resource('Practitioner', 'practitioner')])
+        result = self.run_engine()
+        self.assertEqual(result[1]['provision']['actor'][0]['reference']['reference'],
+                         'Practitioner/' + result[7]['id'])
+        self.assertEqual(result[2]['definition']['resource'][0]['reference']['reference'],
+                         'Patient/' + result[0]['id'])
+        self.assertTrue(result[3]['related'][0]['reference']['value'].startswith('pert-'))
+        self.assertEqual(result[4]['reference'], 'Patient/p')
+        self.assertEqual(result[5]['education'][0]['reference'], 'Patient/p')
+        self.assertEqual(result[6]['action'][0]['condition'][0]['expression']['reference'], 'Patient/p')
+        with closing(sqlite3.connect(self.cohort)) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM resource_references').fetchone()[0], 5)
+
+    def test_parameters_inline_resources_are_explicitly_preserved(self):
+        # Inline Resources need a separate ownership/reference scope, which the
+        # current index does not provide. Never partially transform their names
+        # while leaving their own identities and links unmanaged.
+        inline = resource('Patient', 'inline', name=[{'family': 'Invented'}], birthDate='1980-01-01',
+                          managingOrganization={'reference': 'Organization/org'})
+        self.prepare([resource('Parameters', 'parameters', parameter=[{'name': 'patient', 'resource': inline}]),
+                      resource('Organization', 'org')])
+        result = self.run_engine()
+        self.assertEqual(result[0]['parameter'][0]['resource'], inline)
+        self.assertNotEqual(result[0]['id'], 'parameters')
+        self.assertGreater(self.db.execute("SELECT sum(frequency) FROM field_actions WHERE reason='embedded_resource_preserved'").fetchone()[0], 0)
+        with closing(sqlite3.connect(self.cohort)) as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM resource_references').fetchone()[0], 0)
+
+    def test_inline_resource_inside_contained_parameters_is_also_preserved(self):
+        inline = resource('Patient', 'inline', name=[{'family': 'Invented'}], birthDate='1980-01-01')
+        parameters = resource('Parameters', 'params', parameter=[{'name': 'patient', 'resource': inline}])
+        self.prepare([resource('Patient', 'p', contained=[parameters], extension=[{
+            'url': 'urn:invented', 'valueReference': {'reference': '#params'}}])])
+        result = self.run_engine()[0]
+        self.assertEqual(result['contained'][0]['parameter'][0]['resource'], inline)
+        self.assertNotEqual(result['contained'][0]['id'], 'params')
+
+    def test_legacy_index_uri_edge_cannot_rewrite_a_non_reference(self):
+        self.prepare([resource('Patient', 'p'), resource('DetectedIssue', 'issue', reference='Patient/p')])
+        # Schema-1 databases made by older ingestion could contain this false
+        # edge. Perturbation must independently check the actual field datatype.
+        with closing(sqlite3.connect(self.cohort)) as db:
+            db.execute("INSERT INTO resource_references(occurrence_id,source_resource_id,path,literal,kind,target_resource_id,status) "
+                       "VALUES (2,2,'reference','Patient/p','literal',1,'resolved')")
+            db.commit()
+        result = self.run_engine()
+        self.assertEqual(result[1]['reference'], 'Patient/p')
+        self.assertEqual(self.header['validation']['references_checked'], 0)
+
+    def test_ietf_identifiers_remain_complete_uris_and_share_replacements(self):
+        identifiers = [{'system': 'urn:ietf:rfc:3986', 'value': value} for value in
+                       ('urn:oid:1.2.3.4', 'urn:uuid:550e8400-e29b-41d4-a716-446655440000', 'https://example.invalid/id/1')]
+        self.prepare([resource('Patient', 'p', identifier=identifiers),
+                      resource('Observation', 'o', identifier=deepcopy(identifiers))])
+        result = self.run_engine()
+        self.assertEqual(result[0]['identifier'], result[1]['identifier'])
+        oid, uuid, url = [i['value'] for i in result[0]['identifier']]
+        self.assertRegex(oid, r'^urn:oid:2\.25\.\d+$')
+        for value in (uuid, url):
+            self.assertTrue(value.startswith('urn:uuid:'))
+            self.assertEqual(UUID(value.removeprefix('urn:uuid:')).version, 4)
+        self.assertTrue(all(i['system'] == 'urn:ietf:rfc:3986' for i in result[0]['identifier']))
+
+    def test_contained_canonical_links_and_arrays_are_rewritten(self):
+        self.prepare([resource('Questionnaire', 'q', contained=[resource('ValueSet', 'vs')],
+                               item=[{'linkId': '1', 'type': 'choice', 'answerValueSet': '#vs'}]),
+                      resource('PlanDefinition', 'p', contained=[resource('Library', 'lib')],
+                               library=['#lib', 'https://example.invalid/Library/unchanged'])])
+        result = self.run_engine()
+        self.assertEqual(result[0]['item'][0]['answerValueSet'], '#' + result[0]['contained'][0]['id'])
+        self.assertEqual(result[1]['library'][0], '#' + result[1]['contained'][0]['id'])
+        self.assertEqual(result[1]['library'][1], 'https://example.invalid/Library/unchanged')
+        self.assertEqual(self.header['validation']['references_checked'], 2)
+        with closing(sqlite3.connect(self.cohort)) as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM resource_references WHERE status='resolved'").fetchone()[0], 2)
+
+    def test_legacy_canonical_links_use_exact_contained_ownership(self):
+        self.prepare([resource('Questionnaire', 'q', contained=[resource('ValueSet', 'vs')],
+                               item=[{'linkId': '1', 'type': 'choice', 'answerValueSet': '#vs'},
+                                     {'linkId': '2', 'type': 'choice', 'answerValueSet': '#missing'}]),
+                      resource('ValueSet', 'missing')])
+        with closing(sqlite3.connect(self.cohort)) as db:
+            db.execute('DELETE FROM resource_references')
+            db.commit()
+        result = self.run_engine()
+        self.assertEqual(result[0]['item'][0]['answerValueSet'], '#' + result[0]['contained'][0]['id'])
+        self.assertEqual(result[0]['item'][1]['answerValueSet'], '#missing')
+        self.assertEqual(self.header['validation']['references_checked'], 1)
 
     def test_repeated_occurrences_with_conflicting_reference_contexts_preserved(self):
         def bundle(pid, gender):

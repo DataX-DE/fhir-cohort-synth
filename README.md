@@ -134,6 +134,13 @@ hospital-profile conformance. See the [worked example and implementation guide](
 for handling rules, limitations, API usage and report queries.
 The [MIMIC perturbation review](docs/validation-mimic-perturbation.md) records
 coverage across 928,935 resources and 13 resource types, including rounding effects.
+The [R4 example coverage audit](docs/validation-r4.md) records checks across all
+146 concrete R4 resource types, with external validator results and explicit gaps.
+The [MII 2026 profile audit](docs/validation-mii.md) tests the five packages relevant
+to Frankfurt's list, distinguishing introduced errors, existing failures and
+unresolved profile declarations.
+Inline resources outside containment (for example `Parameters.parameter.resource`)
+are preserved and reported; their identities and patient ownership are not managed.
 
 ## Supported input
 
@@ -208,7 +215,9 @@ interrupted run. Use a new output directory to retry.
 References are resolved after every file has been read, so forward and
 cross-file references work. Supported forms include relative `Patient/id`,
 absolute REST URLs, exact `urn:uuid:…` full URLs, version-specific REST
-references and contained `#id` references. Contained references stay within
+references and contained `#id` references. Local canonical `#id` links, such as
+Questionnaire answer-value-set links, also follow their contained targets.
+Contained references stay within
 their containing resource. A reference using an identifier without a literal
 reference is reported as unresolved; identifiers are not used to guess links.
 

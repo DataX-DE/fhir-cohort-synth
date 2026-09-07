@@ -38,11 +38,20 @@ with several codings contributes several inventory rows. Value measurements,
 qualitative values, diagnosis roles, timestamps and all other source fields
 remain in the payload. This is an ingestion inventory, not cohort statistics.
 
-Only literal FHIR `Reference.reference` values are resolved automatically;
-canonical URLs such as `meta.profile` are not resource-reference edges. The
-index scans JSON reference fields, but does not load StructureDefinitions to
-verify the type of every field. Logical references based only on identifiers
+Literal FHIR `Reference.reference` values are resolved automatically using the
+bundled R4 datatype index. A field named `reference` may instead be a Reference
+object, an Identifier or a URI; those are not literal graph edges. Unknown JSON
+retains the generic reference-field fallback. Local canonical fragments such as
+`Questionnaire.item.answerValueSet = "#choices"` are also indexed against the
+containing resource's exact target. External canonical URLs such as
+`meta.profile` are not graph edges. Logical references based only on identifiers
 remain unresolved. Resolution never performs a network request.
+
+Resources embedded outside containment, such as `Parameters.parameter.resource`,
+remain in their parent's JSON payload and field profile. They do not have their
+own indexed identities or patient ownership; their references are excluded from
+the graph and perturbation preserves their complete subtrees with an explicit
+`embedded_resource_preserved` reason.
 
 Example: inspect a patient's indexed resources using parameterized SQL:
 

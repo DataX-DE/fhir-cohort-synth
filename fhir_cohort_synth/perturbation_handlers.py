@@ -11,6 +11,7 @@ from importlib.resources import files
 import json
 import random
 import re
+from uuid import UUID
 
 from .jsonio import dumps
 
@@ -113,14 +114,22 @@ class Handlers:
         """Return (replacement, action, reason) for one existing JSON node."""
         value = field.value
         if field.reason:
-            return value, 'unsupported' if field.reason.startswith('unknown') else 'preserved', field.reason
+            return value, 'unsupported' if field.reason.startswith('unknown') or field.reason == 'embedded_resource_preserved' else 'preserved', field.reason
         if isinstance(value, (dict, list)) or value is None:
             return value, 'preserved', 'structure_or_null_preserved'
         if value == '':
             return value, 'preserved', 'empty_string_preserved'
         if field.parent_type == 'Identifier' and field.key == 'value' and isinstance(value, str):
             identity = [field.parent.get('system'), value]
-            return 'pert-' + label(self.seed, 'identifier', identity)[:32], 'changed', 'identifier_replaced'
+            token = label(self.seed, 'identifier', identity)[:32]
+            if field.parent.get('system') == 'urn:ietf:rfc:3986':
+                # This identifier system requires a complete URI. A bare dummy
+                # string violates base FHIR even though Identifier.value is string.
+                unique = UUID(hex=token, version=4)
+                result = 'urn:oid:2.25.' + str(unique.int) if value.startswith('urn:oid:') else 'urn:uuid:' + str(unique)
+            else:
+                result = 'pert-' + token
+            return result, 'changed', 'identifier_replaced'
         name_key = field.key if isinstance(field.key, str) else field.path[-2][1]
         if field.parent_type == 'HumanName' and name_key in NAME_FIELDS and isinstance(value, str):
             return 'Dummy-' + label(self.seed, 'name-' + name_key, value)[:16], 'changed', 'name_replaced'
