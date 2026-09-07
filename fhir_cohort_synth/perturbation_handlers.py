@@ -6,14 +6,13 @@ quantities or standalone numbers whose meaning the datatype does not establish.
 """
 from datetime import date, timedelta
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
-import hashlib
 from importlib.resources import files
 import json
-import random
 import re
 from uuid import UUID
 
 from .jsonio import dumps
+from .randomness import label, randbelow
 
 
 DATE_TYPES = {'date', 'dateTime', 'instant'}
@@ -58,40 +57,30 @@ def shift_date(value, days):
     return shifted.isoformat() + value[10:]
 
 
-def label(seed, role, value):
-    # Domain separation prevents an Identifier and a HumanName with the same
-    # source string from receiving the same replacement token. This is NOT a
-    # cryptographic privacy guarantee; the seed and mappings stay local.
-    return hashlib.sha256(dumps([seed, role, value]).encode()).hexdigest()
-
-
-def quantity_factor(seed, root_identity, path, strength):
+def quantity_factor(run_key, root_identity, path, strength):
     """Draw a magnitude in [0.01, strength] and an independent +/- sign.
 
     The root identity and concrete path give each occurrence its own random
     stream: component[0] and component[1] do not share a draw, even if their
-    values match. Revisiting the same slot with the same seed reproduces it.
+    values match. Revisiting the same slot with the same secret key reproduces it.
     For example, a 4% increase returns 1.04; a 7% decrease returns 0.93.
     Strength zero explicitly disables numeric changes. Otherwise validation
     requires strength >= 0.01. Convert random bits directly to Decimal.
     """
     if strength == 0:
         return Decimal(1)
-    # Traversal uses tuples; SQLite JSON reads paths back as lists. Canonicalize
-    # both forms before hashing so validation recreates exactly the same draw.
-    path = [[kind, key] for kind, key in path]
-    rng = random.Random(label(seed, 'quantity-field-factor', [root_identity, path]))
+    identity = [root_identity, path]
     with localcontext() as ctx:
         ctx.prec = max(50, len(strength.as_tuple().digits) + 25)
-        u = Decimal(rng.getrandbits(53)) / Decimal(2**53 - 1)
+        u = Decimal(randbelow(run_key, 'quantity-magnitude', identity, 2**53)) / Decimal(2**53 - 1)
         magnitude = Decimal('0.01') + (strength - Decimal('0.01')) * u
-        sign = 1 if rng.getrandbits(1) else -1
+        sign = 1 if randbelow(run_key, 'quantity-sign', identity, 2) else -1
         return Decimal(1) + sign * magnitude
 
 
-def patient_days(seed, identity, low, high):
+def patient_days(run_key, identity, low, high):
     """Draw one inclusive whole-day offset from this patient's prechecked range."""
-    return random.Random(label(seed, 'date-offset', identity)).randint(low, high)
+    return low + randbelow(run_key, 'date-offset', identity, high - low + 1)
 
 
 def scale(value, factor):
@@ -121,8 +110,8 @@ def relative_change(before, after):
 class Handlers:
     """Decide scalar edits; resource IDs and graph links are handled by the writer."""
 
-    def __init__(self, seed, strength):
-        self.seed = seed
+    def __init__(self, run_key, strength):
+        self.run_key = run_key
         self.strength = strength
         registry = json.loads(files('fhir_cohort_synth').joinpath('data/linear-units.json').read_text())
         self.units = {(system, code) for system, codes in registry['systems'].items() for code in codes}
@@ -165,7 +154,7 @@ class Handlers:
             return value, 'preserved', 'empty_string_preserved'
         if field.parent_type == 'Identifier' and field.key == 'value' and isinstance(value, str):
             identity = [field.parent.get('system'), value]
-            token = label(self.seed, 'identifier', identity)[:32]
+            token = label(self.run_key, 'identifier', identity)[:32]
             if field.parent.get('system') == 'urn:ietf:rfc:3986':
                 # This identifier system requires a complete URI. A bare dummy
                 # string violates base FHIR even though Identifier.value is string.
@@ -181,7 +170,7 @@ class Handlers:
         # 'given' from the preceding path segment instead of treating 0 as a name.
         name_key = field.key if isinstance(field.key, str) else field.path[-2][1]
         if field.parent_type == 'HumanName' and name_key in NAME_FIELDS and isinstance(value, str):
-            return 'Dummy-' + label(self.seed, 'name-' + name_key, value)[:16], 'changed', 'name_replaced'
+            return 'Dummy-' + label(self.run_key, 'name-' + name_key, value)[:16], 'changed', 'name_replaced'
         if field.datatype in DATE_TYPES:
             parsed, reason = full_date(value, field.datatype)
             if parsed is None:
@@ -196,7 +185,7 @@ class Handlers:
                 return value, 'unsupported', reason
             if not patient_assigned:
                 return value, 'preserved', 'shared_or_unassigned'
-            factor = quantity_factor(self.seed, root_identity, field.path, self.strength)
+            factor = quantity_factor(self.run_key, root_identity, field.path, self.strength)
             result = scale(value, factor)
             return result, 'changed' if dumps(result) != dumps(value) else 'preserved', 'field_quantity_scale'
         return value, 'preserved', 'clinical_or_other_content_preserved'

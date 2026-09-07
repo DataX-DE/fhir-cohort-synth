@@ -10,7 +10,7 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
    and determine patient membership.
 2. Run `perturb` using bundled FHIR R4 datatype definitions, independent 1–16%
    increases/decreases per eligible quantity, a shared date offset per patient,
-   and consistent identity replacement.
+   and consistent identity replacement, all derived from one hospital-local secret key.
 3. Validate the written resource population, preserved content, resolved graph
    and use of field-specific numeric draws and patient date offsets. Report
    coverage counts and validation results; keep numeric summaries in local SQLite.
@@ -29,9 +29,11 @@ its automatic measurement contexts still separate local SQLite numeric summaries
 Ingestion schema 2 also removes the profile, extension, measurement and version
 inventories, hospital-scope classification and archived Bundle metadata.
 Reference contexts and source resource JSON remain. Perturbation accepts both
-schema 1 and schema 2 ingestion indexes. Perturbation state/report schema 2 removes
-the patient-level numeric factor and verifies independent field draws. Earlier
-outputs remain records of their original runs; no migration is performed.
+schema 1 and schema 2 ingestion indexes. Perturbation state schema 3 stores a
+32-byte key and `hmac-sha256-v1` algorithm identifier. New runs generate fresh keys;
+`--reuse-key-from` reproduces a compatible completed run. The public seed option
+is removed. Earlier outputs remain records of their original runs; no migration
+is performed. Coverage report schema 2 excludes keys and numeric summaries.
 
 ## Deliberate first-version limits
 

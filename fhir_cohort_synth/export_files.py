@@ -86,7 +86,7 @@ def write_source_files(source, verified_stream, destination, plans):
                 target.chmod(0o600)
                 writer = raw
                 if plan['compressed']:
-                    # A fixed header makes identical seeded runs reproducible.
+                    # A fixed header makes key-reuse runs byte-for-byte reproducible.
                     writer = stack.enter_context(gzip.GzipFile(
                         filename='', fileobj=raw, mode='wb', mtime=0, compresslevel=6))
                 for _ in range(plan['records']):

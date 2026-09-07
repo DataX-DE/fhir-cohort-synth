@@ -27,6 +27,7 @@ from fhir_cohort_synth.perturbation_store import compare_decimals, numeric_summa
 
 REPO = Path(__file__).resolve().parents[1]
 UCUM = 'http://unitsofmeasure.org'
+TEST_KEY = bytes(range(32))  # Public test fixture; production keys come from secrets.
 
 
 def resource(kind, identity, **fields):
@@ -48,26 +49,25 @@ class HandlerTests(unittest.TestCase):
         # Control the magnitude/sign draws separately to hand-check the formula.
         for bits, sign, expected in [(0, 0, '0.99'), (0, 1, '1.01'),
                                      (2**53 - 1, 0, '0.84'), (2**53 - 1, 1, '1.16')]:
-            with patch('fhir_cohort_synth.perturbation_handlers.random.Random') as random_stream:
-                random_stream.return_value.getrandbits.side_effect = [bits, sign]
-                self.assertEqual(quantity_factor(42, 'root', (), Decimal('.16')), Decimal(expected))
-        self.assertEqual(quantity_factor(42, 'root', (), Decimal(0)), 1)
+            with patch('fhir_cohort_synth.perturbation_handlers.randbelow', side_effect=[bits, sign]):
+                self.assertEqual(quantity_factor(TEST_KEY, 'root', (), Decimal('.16')), Decimal(expected))
+        self.assertEqual(quantity_factor(TEST_KEY, 'root', (), Decimal(0)), 1)
 
     def test_field_draws_are_repeatable_separate_and_within_custom_bounds(self):
         paths = [(('key', 'component'), ('index', i), ('key', 'valueQuantity'), ('key', 'value'))
                  for i in range(100)]
-        draws = [quantity_factor(42, 'root', path, Decimal('.03')) for path in paths]
+        draws = [quantity_factor(TEST_KEY, 'root', path, Decimal('.03')) for path in paths]
         self.assertEqual(len(set(draws)), len(paths))
         self.assertTrue(all(Decimal('.01') <= abs(f - 1) <= Decimal('.03') for f in draws))
         self.assertTrue(any(f < 1 for f in draws))
         self.assertTrue(any(f > 1 for f in draws))
-        self.assertEqual(draws, [quantity_factor(42, 'root', p, Decimal('.03')) for p in paths])
-        self.assertEqual(draws[0], quantity_factor(42, 'root', loads(dumps(paths[0])), Decimal('.03')))
-        self.assertNotEqual(draws[0], quantity_factor(43, 'root', paths[0], Decimal('.03')))
-        self.assertNotEqual(draws[0], quantity_factor(42, 'other-root', paths[0], Decimal('.03')))
+        self.assertEqual(draws, [quantity_factor(TEST_KEY, 'root', p, Decimal('.03')) for p in paths])
+        self.assertEqual(draws[0], quantity_factor(TEST_KEY, 'root', loads(dumps(paths[0])), Decimal('.03')))
+        self.assertNotEqual(draws[0], quantity_factor(bytes(reversed(TEST_KEY)), 'root', paths[0], Decimal('.03')))
+        self.assertNotEqual(draws[0], quantity_factor(TEST_KEY, 'other-root', paths[0], Decimal('.03')))
         # Literal field names cannot collide with nested paths.
-        self.assertNotEqual(quantity_factor(42, 'root', (('key', 'a.b'),), Decimal('.10')),
-                            quantity_factor(42, 'root', (('key', 'a'), ('key', 'b')), Decimal('.10')))
+        self.assertNotEqual(quantity_factor(TEST_KEY, 'root', (('key', 'a.b'),), Decimal('.10')),
+                            quantity_factor(TEST_KEY, 'root', (('key', 'a'), ('key', 'b')), Decimal('.10')))
 
     def test_local_numeric_quantiles_use_decimal_order_and_occurrence_weights(self):
         # 10E-1 is smaller than 1.000...001; float coercion would lose that
@@ -152,7 +152,8 @@ class PerturbationTests(unittest.TestCase):
             {'code': {'coding': [{'system': 's', 'code': 'c'}]}, 'valueQuantity': quantity(Decimal('25.40000'), 'cm')},
             {'code': {'coding': [{'system': 's', 'code': 'c'}]}, 'valueQuantity': quantity(Decimal('10.00000'), '[in_i]')}])
         self.prepare([p, a, observation('b', Decimal('10.00000'))])
-        records = self.run_engine()
+        with patch.object(engine, 'new_key', return_value=TEST_KEY):
+            records = self.run_engine()
         cm, inch = [c['valueQuantity']['value'] for c in records[1]['component']]
         before = [Decimal('10.00000'), Decimal('10.00000'), Decimal('25.40000'), Decimal('10.00000')]
         after = [records[1]['valueQuantity']['value'], records[2]['valueQuantity']['value'], cm, inch]
@@ -165,7 +166,7 @@ class PerturbationTests(unittest.TestCase):
         self.assertEqual(self.header['validation']['quantities_checked'], 4)
         self.assertTrue(self.header['validation']['changed_quantities_use_independent_field_factors'])
         self.assertNotIn('factor', [row[1] for row in self.db.execute('PRAGMA table_info(patient_parameters)')])
-        self.assertEqual(self.db.execute('SELECT schema_version FROM run').fetchone()[0], 2)
+        self.assertEqual(self.db.execute('SELECT schema_version FROM run').fetchone()[0], 3)
 
     def test_unsupported_units_and_numeric_metadata_remain_unchanged(self):
         resources = [resource('Patient', 'p'),
@@ -200,7 +201,8 @@ class PerturbationTests(unittest.TestCase):
         a = observation('a', Decimal('100.00000'), contained=[
             observation('inside', Decimal('100.00000'))], derivedFrom=[{'reference': '#inside'}])
         self.prepare([resource('Patient', 'p'), a, deepcopy(a)])
-        result = self.run_engine()
+        with patch.object(engine, 'new_key', return_value=TEST_KEY):
+            result = self.run_engine()
         self.assertEqual(len(result), 2)
         outer = result[1]['valueQuantity']['value']
         inner = result[1]['contained'][0]['valueQuantity']['value']
@@ -213,11 +215,15 @@ class PerturbationTests(unittest.TestCase):
         resources = [resource('Patient', 'p'), observation('a', Decimal('100.000')),
                      observation('b', Decimal('100.000'))]
         self.prepare(resources)
-        first = self.run_engine()
+        with patch.object(engine, 'new_key', return_value=TEST_KEY):
+            first = self.run_engine()
         reordered = self.root / 'reordered.ndjson'
         reordered.write_text('\n'.join(dumps(r) for r in reversed(resources)) + '\n')
         ingest([reordered], self.root / 'reordered-index')
-        perturb(self.root / 'reordered-index/cohort.sqlite', self.root / 'reordered-output')
+        # Control entropy in this test only: a changed source fingerprint is
+        # intentionally not eligible for the user-facing key reuse option.
+        with patch.object(engine, 'new_key', return_value=TEST_KEY):
+            perturb(self.root / 'reordered-index/cohort.sqlite', self.root / 'reordered-output')
         second = [loads(line) for line in iter_export_lines(self.root / 'reordered-output')]
         self.assertEqual({r['id']: r for r in first}, {r['id']: r for r in second})
 
@@ -534,7 +540,7 @@ class PerturbationTests(unittest.TestCase):
         before = hashlib.sha256(self.cohort.read_bytes()).hexdigest()
         self.run_engine()
         second = self.root/'second'
-        perturb(self.cohort, second)
+        perturb(self.cohort, second, reuse_key_from=self.output / 'perturbation-state.sqlite')
         self.assertEqual((self.output/'fhir/source.ndjson').read_bytes(), (second/'fhir/source.ndjson').read_bytes())
         self.assertEqual(before, hashlib.sha256(self.cohort.read_bytes()).hexdigest())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
@@ -610,7 +616,7 @@ class PerturbationTests(unittest.TestCase):
         with open_source(legacy_path) as (_, run):
             self.assertEqual(run['schema_version'], 1)
         perturb(legacy_path, self.root / 'legacy-output')
-        perturb(self.cohort, self.output)
+        perturb(self.cohort, self.output, reuse_key_from=self.root / 'legacy-output/perturbation-state.sqlite')
         for name in ('fhir/source.ndjson', 'perturbation-report.json'):
             self.assertEqual((self.root / 'legacy-output' / name).read_bytes(),
                              (self.output / name).read_bytes())
@@ -642,7 +648,7 @@ class PerturbationTests(unittest.TestCase):
     def test_no_overwrite_and_invalid_parameters(self):
         self.prepare([resource('Patient', 'p')])
         for kwargs in ({'strength': 'NaN'}, {'strength': 1}, {'strength': -1}, {'strength': True}, {'strength': '.005'},
-                       {'date_shift_days': -1}, {'date_shift_days': True}, {'seed': 1.5}):
+                       {'date_shift_days': -1}, {'date_shift_days': True}):
             with self.assertRaises(InputError):
                 perturb(self.cohort, self.output, **kwargs)
         self.assertFalse(self.output.exists())

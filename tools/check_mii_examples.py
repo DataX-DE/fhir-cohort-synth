@@ -81,7 +81,7 @@ def run(packages, output):
     output = Path(output).resolve()
     output.mkdir(mode=0o700)
     report = {'status': 'in_progress', 'fhir_version': '4.0.1',
-              'settings': {'strength': '0.16', 'date_shift_days': 30, 'seed': 42},
+              'settings': {'strength': '0.16', 'date_shift_days': 30},
               'selection': 'Every package/examples/*.json file; standalone files grouped per module; Bundles and invalid root IDs isolated.',
               'support': 'Invented minimal Patients at missing exact Patient reference IDs; official examples unchanged.',
               'packages': [], 'cases': []}
@@ -140,7 +140,7 @@ def run(packages, output):
                     case['status'] = 'ingestion_rejected'
                 else:
                     cohort = directory / 'ingested/cohort.sqlite'
-                    result = perturb(cohort, directory / 'perturbed', seed=42)
+                    result = perturb(cohort, directory / 'perturbed')
                     case.update(status='completed', counts=result['counts'], validation=result['validation'])
                     for side in ('before', 'after'):
                         (directory / side).mkdir(mode=0o700)

@@ -34,7 +34,7 @@ class WorkflowTests(unittest.TestCase):
     def test_one_command_matches_manual_stages(self):
         before = hashlib.sha256(EXAMPLE.read_bytes()).hexdigest()
         args = ['run', '--input', str(EXAMPLE), '--output', str(self.output),
-                '--strength', '0.03', '--date-shift-days', '7', '--seed', '17']
+                '--strength', '0.03', '--date-shift-days', '7']
         with redirect_stdout(io.StringIO()):
             self.assertEqual(main(args), 0)
         self.assertEqual(self.status()['phase'], 'complete')
@@ -43,7 +43,8 @@ class WorkflowTests(unittest.TestCase):
 
         ingest([EXAMPLE], self.root / 'manual-index')
         perturb(self.root / 'manual-index/cohort.sqlite', self.root / 'manual-output',
-                strength='0.03', date_shift_days=7, seed=17)
+                strength='0.03', date_shift_days=7,
+                reuse_key_from=self.output / 'perturbed/perturbation-state.sqlite')
         for name in ('fhir/mii-demo-bundle.ndjson', 'perturbation-report.json'):
             self.assertEqual((self.output / 'perturbed' / name).read_bytes(),
                              (self.root / 'manual-output' / name).read_bytes())
@@ -73,7 +74,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue(any(issue['code'] == 'duplicate_resource' for issue in result['source_issues']))
 
     def test_invalid_options_paths_and_existing_output_fail_before_processing(self):
-        for kwargs in ({'strength': 'NaN'}, {'date_shift_days': -1}, {'seed': True},
+        for kwargs in ({'strength': 'NaN'}, {'date_shift_days': -1}, {'strength': '.005'},
                        {'base_url': 'not-a-server'}):
             with self.assertRaises(InputError):
                 run_export([EXAMPLE], self.output, **kwargs)

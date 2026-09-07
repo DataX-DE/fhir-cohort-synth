@@ -22,8 +22,9 @@ from .ingest import InputError
 from .cohort import open_source, source_fingerprint
 from .jsonio import dumps, loads
 from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patient_days, quantity_factor, scale, shift_date
-from .perturbation_store import Ledger
+from .perturbation_store import Ledger, read_reuse_key
 from .perturbation_report import build_report, write_report
+from .randomness import ALGORITHM, new_key, valid_key
 
 
 class PerturbationError(InputError):
@@ -33,7 +34,7 @@ class PerturbationError(InputError):
 ROOTS = 'SELECT id,payload,digest,resource_type FROM resources WHERE contained=0 ORDER BY id'
 
 
-def validate_settings(strength, date_shift_days, seed):
+def validate_settings(strength, date_shift_days):
     """Validate public options once; keep strength as Decimal throughout the run."""
     try:
         if isinstance(strength, bool):
@@ -43,11 +44,9 @@ def validate_settings(strength, date_shift_days, seed):
             raise ValueError()
         if type(date_shift_days) is not int or not 0 <= date_shift_days <= date.max.toordinal() - 1:
             raise ValueError()
-        if type(seed) is not int:
-            raise ValueError()
     except (ValueError, InvalidOperation):
-        raise PerturbationError('Use strength 0 or in [0.01,1), a nonnegative supported day range and an integer seed.') from None
-    return {'strength': strength, 'date_shift_days': date_shift_days, 'seed': seed}
+        raise PerturbationError('Use strength 0 or in [0.01,1) and a nonnegative supported day range.') from None
+    return {'strength': strength, 'date_shift_days': date_shift_days}
 
 
 def _slot(value, path):
@@ -101,7 +100,7 @@ def _prepare_identities(source, ledger, settings):
             root_id = int(resource['identity'].split(':', 1)[1].split('#', 1)[0])
         else:
             root_id = resource['id']
-        new_id = 'pert-' + label(settings['seed'], 'resource', [resource['identity'], resource['digest']])[:32]
+        new_id = 'pert-' + label(ledger.run_key, 'resource', [resource['identity'], resource['digest']])[:32]
         db.execute('INSERT INTO resource_mappings VALUES (?,?,?,?,?,?,?,?)',
                    (resource['id'], root_id, resource['patient_resource_id'], resource['resource_type'],
                     resource['logical_id'], new_id, None if resource['contained'] else '[]', resource['digest']))
@@ -114,7 +113,7 @@ def _prepare_identities(source, ledger, settings):
     db.commit()
 
 
-def _prepare_date_offsets(source, ledger, types, settings):
+def _prepare_date_offsets(source, ledger, types):
     """Intersect each patient's allowed day ranges before drawing their one offset.
 
     For example, a date at year 0001 forbids negative shifts. Restrict the shared
@@ -147,7 +146,7 @@ def _prepare_date_offsets(source, ledger, types, settings):
         if number % 1000 == 0:
             db.commit()
     for patient in db.execute('SELECT * FROM patient_parameters ORDER BY patient_id'):
-        days = patient_days(settings['seed'], patient['identity'], patient['minimum_days'], patient['maximum_days'])
+        days = patient_days(ledger.run_key, patient['identity'], patient['minimum_days'], patient['maximum_days'])
         db.execute('UPDATE patient_parameters SET days=? WHERE patient_id=?', (days, patient['patient_id']))
     db.commit()
 
@@ -237,7 +236,7 @@ def _rewrite_reference(field, owner, slots, edges, find_target, root_id):
 def _write(source, ledger, types, settings, destination):
     """Transform one source tree at a time, recording every edit before emission."""
     db = ledger.db
-    handlers = Handlers(settings['seed'], settings['strength'])
+    handlers = Handlers(ledger.run_key, settings['strength'])
 
     @lru_cache(maxsize=4096)
     def date_offset(patient):
@@ -316,7 +315,17 @@ def _validate(ledger, destination):
     This is a transformation check, not the external HL7/profile validator.
     """
     db = ledger.db
-    settings = loads(db.execute('SELECT settings_json FROM run').fetchone()[0])
+    run = db.execute('SELECT settings_json,run_key,randomness_algorithm FROM run').fetchone()
+    run_key = run['run_key']
+    if run['randomness_algorithm'] != ALGORITHM or not valid_key(run_key):
+        raise PerturbationError('Cannot validate an unsupported algorithm or invalid run key.')
+    settings = loads(run['settings_json'])
+    # Recreate every patient's draw, including zero offsets and patients with
+    # no changed dates. A stored offset alone is not evidence of a keyed draw.
+    for patient in db.execute('SELECT * FROM patient_parameters'):
+        expected = patient_days(run_key, patient['identity'], patient['minimum_days'], patient['maximum_days'])
+        if patient['days'] != expected:
+            raise PerturbationError('Patient date offset does not match its keyed draw.')
     roots = db.execute('SELECT * FROM resource_mappings WHERE resource_id=root_id ORDER BY resource_id')
     counts = {'roots_checked': 0, 'changes_checked': 0, 'references_checked': 0,
               'dates_checked': 0, 'quantities_checked': 0}
@@ -342,7 +351,7 @@ def _validate(ledger, destination):
                 before = loads(change['old_json']) if change['old_present'] else None
                 after = parent[key]
                 if change['reason'] == 'field_quantity_scale':
-                    factor = quantity_factor(settings['seed'], root['new_id'], path, settings['strength'])
+                    factor = quantity_factor(run_key, root['new_id'], path, settings['strength'])
                     if dumps(scale(before, factor)) != dumps(after):
                         raise PerturbationError('Output quantity does not match its field-specific percentage change.')
                     counts['quantities_checked'] += 1
@@ -367,14 +376,14 @@ def _validate(ledger, destination):
     return counts
 
 
-def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, seed=42):
+def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None):
     """Create perturbed source-derived records and return the report header.
 
     The ingestion database must be complete and is opened read-only. We edit
     its original JSON directly and measure the resulting changes.
     The output must be new, and is usable only after its run status completes.
     """
-    settings = validate_settings(strength, date_shift_days, seed)
+    settings = validate_settings(strength, date_shift_days)
     output = Path(output_dir).absolute()
     if output.exists() or output.is_symlink():
         raise PerturbationError('Output already exists; choose a new output directory.')
@@ -384,16 +393,20 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, seed=42
             raise PerturbationError('Perturbation requires a FHIR R4 4.0.1 source index.')
         fingerprint = source_fingerprint(source)
         files = plan_files(source)
+        # Validate reproduction inputs before creating the perturbation output.
+        # A fresh run always uses operating-system randomness, even at strength 0.
+        run_key = (new_key() if reuse_key_from is None else
+                   read_reuse_key(reuse_key_from, settings, fingerprint, types.metadata))
         output.parent.mkdir(parents=True, exist_ok=True)
         output.mkdir(mode=0o700)
-        ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata)
+        ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata, run_key)
         db = ledger.db
         try:
             issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
             db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
             # 1. Allocate every target ID and one date offset per patient.
             _prepare_identities(source, ledger, settings)
-            _prepare_date_offsets(source, ledger, types, settings)
+            _prepare_date_offsets(source, ledger, types)
             # 2. Write a private partial export and its field-by-field audit trail.
             db.execute("UPDATE run SET phase='writing'")
             db.commit()

@@ -9,12 +9,16 @@ All original/replacement numeric tokens are TEXT, never SQLite REAL. Small
 in-memory counters combine repeated keys, then flush into exact database totals.
 """
 from collections import Counter
+from contextlib import closing
 from decimal import Decimal
 from functools import lru_cache
+from pathlib import Path
 import sqlite3
 
 from .jsonio import dumps, loads
+from .ingest import InputError
 from .perturbation_handlers import relative_change
+from .randomness import ALGORITHM, valid_key
 
 
 SCHEMA = """
@@ -25,7 +29,9 @@ PRAGMA cache_size=-65536;
 PRAGMA temp_store=FILE;
 CREATE TABLE run (id INTEGER PRIMARY KEY CHECK(id=1), schema_version INTEGER NOT NULL,
  status TEXT NOT NULL, phase TEXT NOT NULL, settings_json TEXT NOT NULL,
- source_fingerprint TEXT NOT NULL, definitions_json TEXT NOT NULL, failure_code TEXT);
+ source_fingerprint TEXT NOT NULL, definitions_json TEXT NOT NULL, failure_code TEXT,
+ randomness_algorithm TEXT NOT NULL,
+ run_key BLOB NOT NULL CHECK(typeof(run_key)='blob' AND length(run_key)=32));
 CREATE TABLE patient_parameters (patient_id INTEGER PRIMARY KEY, identity TEXT NOT NULL,
  minimum_days INTEGER NOT NULL, maximum_days INTEGER NOT NULL, days INTEGER);
 -- Integer IDs refer to ingestion rows; old_id/new_id are FHIR strings.
@@ -106,10 +112,50 @@ def normalized_path(path):
     return segments, dumps(segments)
 
 
+def read_reuse_key(path, settings, fingerprint, metadata):
+    """Read one completed, compatible run without modifying its local database.
+
+    The key never leaves this return value and the new run's state database.
+    Check the snapshot and settings so key reuse means reproduction, not silent
+    reuse across unrelated exports. Older seed-based runs cannot supply a key.
+    """
+    try:
+        path = Path(path).absolute()
+        if path.is_symlink() or not path.is_file():
+            raise InputError('Key reuse requires an existing state database file, not a symlink.')
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True)) as db:
+            db.row_factory = sqlite3.Row
+            db.execute('PRAGMA query_only=ON')
+            db.execute('BEGIN')
+            rows = db.execute('SELECT id,schema_version,status,settings_json,source_fingerprint,'
+                              'definitions_json,randomness_algorithm,run_key FROM run').fetchmany(2)
+            if len(rows) != 1 or rows[0]['id'] != 1 or rows[0]['schema_version'] != 3:
+                raise InputError('Key reuse requires a supported schema 3 state database.')
+            run = rows[0]
+            if run['status'] not in {'completed', 'completed_with_warnings'}:
+                raise InputError('Key reuse requires a completed perturbation run.')
+            if run['randomness_algorithm'] != ALGORITHM or not valid_key(run['run_key']):
+                raise InputError('State database has an unsupported algorithm or invalid run key.')
+            if run['source_fingerprint'] != fingerprint:
+                raise InputError('Key reuse requires the same indexed source snapshot.')
+            if loads(run['definitions_json']) != metadata:
+                raise InputError('Key reuse requires the same datatype definitions.')
+            if loads(run['settings_json']) != settings:
+                raise InputError('Key reuse requires the same strength and date range as the previous run.')
+            return run['run_key']
+    except InputError:
+        raise
+    except (OSError, sqlite3.Error, ValueError, TypeError):
+        raise InputError('Cannot reuse a key from this state database; use a completed, supported keyed run.') from None
+
+
 class Ledger:
     """Own one new state database; perturb() controls run phases and completion."""
 
-    def __init__(self, path, settings, fingerprint, metadata):
+    def __init__(self, path, settings, fingerprint, metadata, run_key):
+        if not valid_key(run_key):
+            raise InputError('Run key must contain exactly 32 bytes.')
+        self.run_key = run_key
         with path.open('xb'):
             pass
         path.chmod(0o600)
@@ -117,8 +163,8 @@ class Ledger:
         self.db.row_factory = sqlite3.Row
         self.db.create_collation('DECIMAL', compare_decimals)
         self.db.executescript(SCHEMA)
-        self.db.execute('INSERT INTO run VALUES (1,2,?,?,?,?,?,NULL)',
-                        ('in_progress', 'preparation', dumps(settings), fingerprint, dumps(metadata)))
+        self.db.execute('INSERT INTO run VALUES (1,3,?,?,?,?,?,NULL,?,?)',
+                        ('in_progress', 'preparation', dumps(settings), fingerprint, dumps(metadata), ALGORITHM, run_key))
         self.db.commit()
         self.actions = Counter()
         self.frequencies = Counter()

@@ -57,18 +57,19 @@ Deduplicated roots stay in their first source file. The report's `export` sectio
 lists every output file, record count and checksum of its decompressed content.
 
 Defaults are **an independent 1–16% increase or decrease per eligible quantity,
-±30 days per patient and seed 42**. To change the upper percentage bound:
+±30 days per patient and a fresh secret key per run**. To change the upper percentage bound:
 
 ```sh
 python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output \
-  --strength 0.16 --date-shift-days 30 --seed 42
+  --strength 0.16 --date-shift-days 30
 ```
 
 Each quantity occurrence draws its own magnitude and a 50/50 sign; repeated
 measurements and components vary independently. `--strength` sets the maximum
 fractional change, with a fixed 1% minimum; `0` disables numeric changes.
-Each patient still shares one date offset. The same indexed snapshot,
-settings and seed produce the same records. Decimal rounding can leave small
+Each patient still shares one date offset. A fresh 32-byte key controls all
+generated identities, names, identifiers, numeric draws and date offsets. It is
+stored only in the hospital's local state database. Decimal rounding can leave small
 changes unchanged. IDs and resolved references are replaced consistently;
 clinical codes, booleans, narratives, attachments and unsupported fields remain
 unchanged. Shared or unassigned resources retain their quantities and dates.
@@ -83,10 +84,23 @@ python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output loca
 python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output local-data/perturbed
 ```
 
-The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, seed=42)`.
-The earlier `field_db` argument and CLI `--fields` option have been removed.
-There is no cross-database matching step because perturbation now has one input.
-The ingestion database still must be completed, supported and readable.
+The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None)`.
+The ingestion database must be completed, supported and readable.
+To reproduce a previous export locally, supply its state database and the same
+input snapshot and numeric/date settings, using a new output directory:
+
+```sh
+python3 fhir_synth.py perturb \
+  --input local-data/index/cohort.sqlite --output local-data/reproduced \
+  --reuse-key-from local-data/perturbed/perturbation-state.sqlite
+```
+
+`run` also accepts `--reuse-key-from`. The previous run must be complete and
+use the same datatype definitions and algorithm. Supply any nondefault strength
+and date range again. Without this option, every run gets a fresh key.
+The public `seed` argument and `--seed` option have been removed; older keyless
+output databases cannot be used for reproduction. The earlier `field_db` argument
+and CLI `--fields` option are also removed.
 
 The perturbation report includes transformation coverage and validation counts.
 Numeric distributions, before/after values and percentage-change summaries stay
@@ -163,8 +177,10 @@ interrupted run. Use a new output directory to retry.
 
 New ingestion indexes use schema version 2, with eight tables for resource
 storage, lookup and processing checks. Schema version 1 indexes remain readable
-by perturbation without modification. The perturbation state database retains
-identity mappings, patient parameters, recorded edits and before/after statistics.
+by perturbation without modification. Perturbation state schema 3 retains the
+secret key, algorithm identifier, identity mappings, patient parameters, recorded
+edits and before/after statistics. Keep this database at the hospital; export
+only the FHIR files and coverage report.
 
 ## Reference resolution and patient grouping
 
@@ -275,6 +291,7 @@ For perturbation, start at `perturb()` in
 [`perturbation.py`](fhir_cohort_synth/perturbation.py). Datatype traversal lives in
 `fhir_types.py`, scalar transformations in `perturbation_handlers.py`, and the
 SQLite audit trail and distribution summaries in `perturbation_store.py`.
+`randomness.py` supplies purpose-separated HMAC-SHA256 labels and unbiased draws.
 `export_files.py` restores source file boundaries and verifies compressed output.
 `perturbation_report.py` builds the report; `cohort.py` owns shared read-only
 source checks.

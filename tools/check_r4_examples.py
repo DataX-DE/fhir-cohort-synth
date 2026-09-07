@@ -115,7 +115,7 @@ def run(package, extra_zip, output):
     for name, resource in examples.items():
         if resource['resourceType'] == 'Patient' and resource.get('id'):
             patient_examples['Patient/' + resource['id']].append((name, resource))
-    report = {'status': 'in_progress', 'fhir_version': '4.0.1', 'seed': 7,
+    report = {'status': 'in_progress', 'fhir_version': '4.0.1',
               'archives': [{'name': Path(p).name, 'sha256': hashlib.sha256(Path(p).read_bytes()).hexdigest()}
                            for p in (package, extra_zip)],
               'official_inventory': dict(sorted(inventory.items())),
@@ -151,7 +151,7 @@ def run(package, extra_zip, output):
                 case['status'] = 'ingestion_rejected'
             else:
                 cohort = case_dir / 'ingested/cohort.sqlite'
-                result = perturb(cohort, case_dir / 'perturbed', seed=7)
+                result = perturb(cohort, case_dir / 'perturbed')
                 case['status'] = 'completed'
                 case['counts'] = result['counts']
                 case['validation'] = result['validation']

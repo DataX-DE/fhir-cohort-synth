@@ -9,7 +9,7 @@ Its helpers handle each phase.
 | Stage | Start here | What it produces |
 | --- | --- | --- |
 | Ingest | `ingest.py: ingest()` | `cohort.sqlite`: complete source payloads, identities, references and patient membership |
-| Perturb | `perturbation.py: perturb()` | Source-named files in `fhir/`, a state database and a report of actual changes |
+| Perturb | `perturbation.py: perturb()` | Source-named files in `fhir/`, a local state database and a coverage report |
 
 These modules live under `fhir_cohort_synth/`. `fhir_synth.py` is the launcher;
 `cli.py` parses options, calls the public functions and formats safe console errors.
@@ -23,7 +23,7 @@ contains the summary queries. There is no inheritance between these modules.
 The index stores resource JSON, identities, reference scopes and patient
 membership. Profile, extension and measurement inventories have been removed;
 those fields remain in the JSON. The perturbation ledger still stores mappings,
-patient parameters, edits and before/after measurement statistics.
+the secret run key, patient parameters, edits and before/after measurement statistics.
 
 ## One Observation through the pipeline
 
@@ -54,21 +54,23 @@ Consider this invented resource together with its referenced `Patient/p1`:
 2. **Connect the patient.** After all files are loaded, `Store.resolve()` finds
    the Patient target. `Store.group_patients()` assigns this Observation to it.
    This separate pass allows the Patient to appear later in the export.
-3. **Prepare changes.** `_prepare_identities()` allocates replacement IDs for
+3. **Prepare changes.** Generate a fresh secret key, or read a compatible completed
+   run with `--reuse-key-from`. Commit that key to local state.
+   `_prepare_identities()` allocates replacement IDs for
    every target. `_prepare_date_offsets()` checks all
    supported dates before choosing a shared offset that fits calendar bounds.
    This uses the ingestion database directly.
 4. **Edit supported slots.** `TypeIndex.walk()` resolves `valueQuantity` to
    Quantity and its `value` to decimal. `Handlers.apply()` checks the exact unit
    system/code and patient ownership, then draws a separate signed percentage
-   for this quantity using the root identity and concrete field path. Repeated
+   for this quantity using the secret key, root identity and concrete field path. Repeated
    values and components draw independently. With an illustrative factor `1.01` and
    offset `+7`, the value becomes `70.70` and the date becomes
    `2020-01-08T09:00:00.000+01:00`. These are illustrative parameters, not a
-   prediction of the seed's draw. `_rewrite_reference()` points the subject at
+   prediction of the keyed draw. `_rewrite_reference()` points the subject at
    the prepared replacement Patient ID. Codes and units remain unchanged.
 5. **Check what was written.** `_validate()` rereads the emitted JSON, checks
-   identities, links and recorded transformations, then undoes each edit in
+   identities, links and transformations using the stored key, then undoes each edit in
    memory. The reconstructed payload must have the original digest. The local
    SQLite ledger records numeric changes, including changes lost to rounding.
    `perturbation_report.build_report()` assembles coverage and validation counts;

@@ -17,7 +17,7 @@ def _write_status(output, status, phase):
     partial.replace(output / 'run.json')
 
 
-def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, seed=42, base_url=None):
+def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None, base_url=None):
     """Run both stages in a fresh directory and return the perturbation summary.
 
     index/ contains the original source index and ingestion reports.
@@ -25,7 +25,7 @@ def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, seed=42
     Validate paths/options before creating anything. Later failures retain
     partial work for inspection, and a retry always needs a new destination.
     """
-    settings = validate_settings(strength, date_shift_days, seed)
+    settings = validate_settings(strength, date_shift_days)
     base_url = normalize_base_url(base_url)
     files, output = discover(inputs, output_dir)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -39,7 +39,7 @@ def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, seed=42
 
         phase = 'perturbation'
         _write_status(output, 'in_progress', phase)
-        report = perturb(output / 'index/cohort.sqlite', output / 'perturbed', **settings)
+        report = perturb(output / 'index/cohort.sqlite', output / 'perturbed', reuse_key_from=reuse_key_from, **settings)
         # perturb() returns only after checking the written records and reports.
         phase = 'complete'
         _write_status(output, report['status'], phase)

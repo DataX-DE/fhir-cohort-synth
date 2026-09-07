@@ -17,7 +17,7 @@ from .workflow import run_export
 def perturb_command(args):
     """Run the export workflow or an already indexed cohort with the same options."""
     operation = run_export if args.command == 'run' else perturb
-    options = {'strength': args.strength, 'date_shift_days': args.date_shift_days, 'seed': args.seed}
+    options = {'strength': args.strength, 'date_shift_days': args.date_shift_days, 'reuse_key_from': args.reuse_key_from}
     if args.command == 'run':
         options['base_url'] = args.base_url
     try:
@@ -70,7 +70,7 @@ def main(argv=None):
     for subcommand in (run, command):
         subcommand.add_argument("--strength", default="0.16", help="Maximum independent +/- quantity change, in [0.01,1); minimum 0.01, default maximum 0.16. Use 0 to disable.")
         subcommand.add_argument("--date-shift-days", type=int, default=30, help="Maximum absolute patient date offset; default 30 days.")
-        subcommand.add_argument("--seed", type=int, default=42, help="Deterministic local transformation seed; default 42.")
+        subcommand.add_argument("--reuse-key-from", help="Previous local perturbation-state.sqlite for reproduction; requires matching input and settings. Default: fresh secret key.")
     args = parser.parse_args(argv)
     if args.command in {"run", "perturb"}:
         return perturb_command(args)

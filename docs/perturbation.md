@@ -12,7 +12,7 @@ outputs stay local; the result has no privacy or anonymization guarantee.
 python3 fhir_synth.py run \
   --input examples/mii-demo-bundle.json \
   --output local-data/demo \
-  --strength 0.16 --date-shift-days 30 --seed 42
+  --strength 0.16 --date-shift-days 30
 ```
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
@@ -34,22 +34,42 @@ from fhir_cohort_synth.perturbation import perturb
 summary = perturb(
     "local-data/demo/index/cohort.sqlite",
     "local-data/another-perturbed-run",
-    strength=0.16, date_shift_days=30, seed=42,
+    strength=0.16, date_shift_days=30,
 )
 ```
 
-The same input snapshot, settings and seed give deterministic records. Strength
+Each run generates a fresh secret key using `secrets.token_bytes(32)`. Strength
 sets the upper relative quantity change and must be finite and in `[0.01, 1)`,
 or zero to disable numeric changes. The minimum magnitude is fixed at `0.01`.
 The day range must be a supported nonnegative integer; zero disables date shifts.
-Identity replacement still
-runs. Reordering/re-ingesting an export can change its snapshot identities, so
-determinism is defined for the same indexed snapshot.
+Identity replacement still runs, including when numeric and date changes are
+disabled. The same key, input snapshot, settings and implementation reproduce
+the same FHIR files. Reordering/re-ingesting an export can change its snapshot
+identities, so reproduction requires the same indexed snapshot.
+
+To reuse a key locally, point to a completed run's state database:
+
+```sh
+python3 fhir_synth.py perturb \
+  --input local-data/demo/index/cohort.sqlite \
+  --output local-data/reproduced \
+  --reuse-key-from local-data/demo/perturbed/perturbation-state.sqlite
+```
+
+Both `perturb()` and `workflow.run_export()` accept `reuse_key_from=None`; both
+CLI commands accept `--reuse-key-from`. Supply the same nondefault strength and
+date range again when applicable. The reader opens the previous database read-only
+and checks completion, state schema 3, algorithm, key length, source fingerprint,
+datatype definitions and settings before creating the perturbation output.
+If this check fails during `run`, the completed ingestion index remains with
+an overall failed status. There is no fallback to a fresh key or public seed.
+Older keyless output databases are not migrated and cannot supply a key.
+The `seed` argument and `--seed` option have been removed.
 
 Each eligible quantity occurrence independently draws a magnitude uniformly
 between 1% and `strength` (default 16%), and an increase/decrease with equal
 probability. For example, `100.00` with a 4% increase becomes `104.00`; another
-occurrence with a 7% decrease becomes `93.00`. The seed, prepared root identity
+occurrence with a 7% decrease becomes `93.00`. The secret key, prepared root identity
 and concrete field path determine its draw, including individual array positions.
 Date offsets remain shared per patient. Before/after measurement
 statistics are calculated during perturbation; there is no separate full-field
@@ -57,7 +77,14 @@ extraction or profiling stage.
 The earlier `field_db` API argument and `--fields` CLI option have been removed.
 
 The complete Python entry point is `workflow.run_export(inputs, output_dir, ...)`,
-with the same strength, date range and seed options plus an optional `base_url`.
+with the same strength, date range and key-reuse options plus an optional `base_url`.
+
+`randomness.py` uses HMAC-SHA256 with separate purpose labels for quantity
+magnitude, sign, dates, resource IDs, identifiers and individual name fields.
+Canonical structured input preserves types and normalizes tuple/list paths.
+Bounded integer draws use rejection sampling to avoid modulo bias. The algorithm
+is recorded as `hmac-sha256-v1`. The key is committed to local state before
+transformations begin and never included in JSON reports, exports or console output.
 
 ## Field handling
 
@@ -132,8 +159,8 @@ dates, preserved extension dates, shared resources or comparisons across patient
 ## Worked example
 
 Suppose three quantities independently draw **+4%, −7% and +2%**, while their
-patient's date offset is **+7 days**. These illustrate the calculation; seed 42
-does not necessarily draw these values.
+patient's date offset is **+7 days**. These illustrate the calculation; a run's
+secret key does not necessarily produce these values.
 
 | Existing field | Before | After |
 | --- | --- | --- |
@@ -157,7 +184,7 @@ exactly as supplied.
   directories relative to the source files' common parent. A deduplicated root
   appears in its first source file, with contained resources nested once.
   Single-resource JSON stays JSON; unpacked Bundle roots use `.ndjson` files.
-- `perturbation-state.sqlite`: settings, source fingerprint, definition
+- `perturbation-state.sqlite`: the secret key and algorithm, settings, source fingerprint, definition
   provenance, identity maps, patient parameters, exact changes, action counts,
   numeric frequencies and run status. It contains original source values.
 - `perturbation-report.json`: coverage by root resource type and normalized
@@ -175,8 +202,8 @@ and exact value frequencies are not exported to JSON. Decimals are stored as tex
 and ordered numerically in SQLite.
 
 The validator reads the emitted NDJSON afresh, checks replacement identities
-and reference targets, reproduces each changed quantity's percentage draw, and
-verifies shared patient date offsets. Undoing the recorded changes must reproduce
+and reference targets, reads the stored key to reproduce each changed quantity's
+percentage draw, and reproduces every patient's date offset. Undoing the recorded changes must reproduce
 every source root's digest.
 This verifies that codes, booleans, arrays, empty/missing fields, unknown content
 and all other unrecorded fields are preserved. Adding a missing root ID is the
@@ -207,8 +234,9 @@ databases need no WAL/SHM sidecars.
 
 ## Follow the code and inspect coverage
 
-`fhir_types.py` resolves and walks datatypes. `perturbation_handlers.py` contains
-the small transformations. `perturbation.py` prepares mappings and date bounds,
+`fhir_types.py` resolves and walks datatypes. `randomness.py` supplies keyed labels
+and draws; `perturbation_handlers.py` contains the small transformations.
+`perturbation.py` prepares mappings and date bounds,
 writes records, validates them and completes the run. `perturbation_report.py`
 builds the human-readable summaries. `perturbation_store.py` stores audit data
 and aggregates distributions. `workflow.py` coordinates ingestion and

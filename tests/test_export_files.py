@@ -70,7 +70,7 @@ class ExportFilesTests(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.inputs.iterdir()})
 
         second = self.root / 'second'
-        perturb(self.cohort, second)
+        perturb(self.cohort, second, reuse_key_from=self.output / 'perturbation-state.sqlite')
         for name in before:
             self.assertEqual((files / name).read_bytes(), (second / 'fhir' / name).read_bytes())
 
