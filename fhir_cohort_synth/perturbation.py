@@ -31,6 +31,7 @@ ROOTS = 'SELECT id,payload,digest,resource_type FROM resources WHERE contained=0
 
 
 def _settings(strength, date_shift_days, seed):
+    """Validate public options once; keep strength as Decimal throughout the run."""
     try:
         if isinstance(strength, bool):
             raise ValueError()
@@ -47,13 +48,19 @@ def _settings(strength, date_shift_days, seed):
 
 
 def _slot(value, path):
-    for kind, key in path:
+    """Find a value by typed path, e.g. (('key', 'contained'), ('index', 0))."""
+    for _kind, key in path:
         value = value[key]
     return value
 
 
 def _slots(db, root_id, resource):
-    """Locate indexed contained resources within their one original tree."""
+    """Map root/contained paths to their prepared resource-mapping rows.
+
+    The empty path () identifies the root. A path such as
+    (('key', 'contained'), ('index', 0)) identifies its first contained resource.
+    These are resource boundaries, not the locations of all scalar fields.
+    """
     rows = {r['resource_id']: dict(r) for r in db.execute('SELECT * FROM resource_mappings WHERE root_id=?', (root_id,))}
     result = {(): rows[root_id]}
     by_id = {r['old_id']: r for r in rows.values() if r['resource_id'] != root_id}
@@ -70,25 +77,55 @@ def _slots(db, root_id, resource):
 
 
 def _owner(slots, path):
+    """Return the resource owning a field; its patient_id may still be absent."""
     return slots.get(path[:2], slots[()])
 
 
 def _prepare(source, ledger, types, settings):
+    """Prepare all identities before links are written, then choose safe offsets."""
+    _prepare_identities(source, ledger, settings)
+    _prepare_date_offsets(source, ledger, types, settings)
+
+
+def _prepare_identities(source, ledger, settings):
+    """Allocate replacement IDs and one factor per Patient, including forward targets.
+
+    resource_id/root_id/patient_id are ingestion database row IDs. old_id/new_id
+    are FHIR strings. A missing patient_id means shared or unassigned ownership;
+    such a resource still receives a replacement identity.
+    """
     db = ledger.db
-    for r in source.execute('SELECT r.id,r.identity,r.digest,r.resource_type,r.logical_id,r.contained,p.patient_resource_id '
-                            'FROM resources r LEFT JOIN patient_memberships p ON p.resource_id=r.id ORDER BY r.id'):
-        root_id = int(r['identity'].split(':', 1)[1].split('#', 1)[0]) if r['contained'] else r['id']
-        new_id = 'pert-' + label(settings['seed'], 'resource', [r['identity'], r['digest']])[:32]
+    for resource in source.execute(
+            'SELECT r.id,r.identity,r.digest,r.resource_type,r.logical_id,r.contained,p.patient_resource_id '
+            'FROM resources r LEFT JOIN patient_memberships p ON p.resource_id=r.id ORDER BY r.id'):
+        # Ingestion schema 1 stores contained identity as "contained:<root row>#<id>".
+        # Read that index convention here, never infer ownership from a FHIR ID.
+        if resource['contained']:
+            root_id = int(resource['identity'].split(':', 1)[1].split('#', 1)[0])
+        else:
+            root_id = resource['id']
+        new_id = 'pert-' + label(settings['seed'], 'resource', [resource['identity'], resource['digest']])[:32]
         db.execute('INSERT INTO resource_mappings VALUES (?,?,?,?,?,?,?,?)',
-                   (r['id'], root_id, r['patient_resource_id'], r['resource_type'], r['logical_id'], new_id,
-                    None if r['contained'] else '[]', r['digest']))
-        if r['resource_type'] == 'Patient':
-            factor = patient_factor(settings['seed'], r['identity'], settings['strength'])
+                   (resource['id'], root_id, resource['patient_resource_id'], resource['resource_type'],
+                    resource['logical_id'], new_id, None if resource['contained'] else '[]', resource['digest']))
+        if resource['resource_type'] == 'Patient':
+            factor = patient_factor(settings['seed'], resource['identity'], settings['strength'])
             db.execute('INSERT INTO patient_parameters VALUES (?,?,?,?,?,NULL)',
-                       (r['id'], r['identity'], dumps(factor), -settings['date_shift_days'], settings['date_shift_days']))
-        if r['id'] % 1000 == 0:
+                       (resource['id'], resource['identity'], dumps(factor),
+                        -settings['date_shift_days'], settings['date_shift_days']))
+        if resource['id'] % 1000 == 0:
             db.commit()
     db.commit()
+
+
+def _prepare_date_offsets(source, ledger, types, settings):
+    """Intersect each patient's allowed day ranges before drawing their one offset.
+
+    For example, a date at year 0001 forbids negative shifts. Restrict the shared
+    range instead of clipping individual dates, which would change intervals.
+    Only this root's limits are in memory; SQLite combines them across roots.
+    """
+    db = ledger.db
     db.execute("UPDATE run SET phase='date_bounds'")
     for number, root in enumerate(source.execute(ROOTS), 1):
         resource = loads(root['payload'])
@@ -133,6 +170,11 @@ def _reference_path(path):
 
 
 def _edges(source, slots):
+    """Collect reference resolutions for one root, collapsing repeated occurrences.
+
+    Keep a set per (owning resource, path, literal): duplicate appearances of
+    the same payload must agree on a single target before we rewrite a link.
+    """
     result = defaultdict(set)
     for owner in slots.values():
         for row in source.execute("SELECT path,literal,status,target_resource_id FROM resource_references WHERE source_resource_id=? AND kind='literal'",
@@ -142,12 +184,62 @@ def _edges(source, slots):
 
 
 def _record_change(db, root, path, owner, before, after, reason, datatype=None, target=None, old_present=True):
+    """Record enough to check and undo this edit; missing is different from null."""
     db.execute('INSERT INTO changes VALUES (?,?,?,?,?,?,?,?,?)',
                (root, dumps(path), owner, int(old_present), dumps(before) if old_present else None,
                 dumps(after), reason, datatype, target))
 
 
+def _rewrite_reference(field, owner, slots, edges, find_target, root_id):
+    """Return (value, action, reason, target row ID), or None to keep normal handling.
+
+    Eligibility comes from the datatype, not just the name 'reference'. Match
+    the existing graph by owner, relative path and original literal; never pick
+    the first of multiple targets. Identity rewriting also applies to indexed
+    links inside preserved extensions, but not unsupported embedded resources.
+    """
+    local_canonical = (field.datatype == 'canonical' and isinstance(field.value, str)
+                       and field.value.startswith('#') and len(field.value) > 1)
+    literal_reference = (field.key == 'reference' and isinstance(field.value, str)
+                         and (field.parent_type == 'Reference' or field.datatype is None))
+    if field.reason == 'embedded_resource_preserved' or not (literal_reference or local_canonical):
+        return None
+
+    # Contained fields have root-relative traversal paths, whereas ingestion's
+    # graph stores paths relative to the contained resource that owns the link.
+    owner_path = field.path[:2] if field.path[:2] in slots else ()
+    key = (owner['resource_id'], _reference_path(field.path[len(owner_path):]), field.value)
+    resolutions = edges.get(key, set())
+    if local_canonical and not resolutions:
+        # Older indexes did not record canonical # links. Their exact targets
+        # still exist in this root's map; do not search other roots or URLs.
+        matches = [mapping for path, mapping in slots.items() if path and mapping['old_id'] == field.value[1:]]
+        if len(matches) == 1:
+            resolutions = {('resolved', matches[0]['resource_id'])}
+        else:
+            resolutions = {('ambiguous' if matches else 'unresolved', None)}
+    if not resolutions:
+        return None
+    if len(resolutions) != 1:
+        return field.value, 'unsupported', 'reference_unresolved_or_ambiguous', None
+    status, target_id = next(iter(resolutions))
+    if status != 'resolved':
+        return field.value, 'unsupported', 'reference_unresolved_or_ambiguous', None
+
+    mapped = find_target(target_id)
+    if mapped is None:
+        raise PerturbationError('A resolved reference target is missing.')
+    if mapped['root_id'] != mapped['resource_id']:
+        if mapped['root_id'] != root_id:
+            raise PerturbationError('A contained reference crosses resource ownership.')
+        replacement = '#' + mapped['new_id']
+    else:
+        replacement = mapped['resource_type'] + '/' + mapped['new_id']
+    return replacement, 'changed', 'reference_rewritten', target_id
+
+
 def _write(source, ledger, types, settings, destination):
+    """Transform one source tree at a time, recording every edit before emission."""
     db = ledger.db
     handlers = Handlers(settings['seed'])
 
@@ -161,8 +253,8 @@ def _write(source, ledger, types, settings, destination):
         return Decimal(row[0]), row[1]
 
     @lru_cache(maxsize=4096)
-    def target(identity):
-        return db.execute('SELECT * FROM resource_mappings WHERE resource_id=?', (identity,)).fetchone()
+    def target(resource_id):
+        return db.execute('SELECT * FROM resource_mappings WHERE resource_id=?', (resource_id,)).fetchone()
 
     with destination.open('x', encoding='utf-8') as stream:
         destination.chmod(0o600)
@@ -185,41 +277,20 @@ def _write(source, ledger, types, settings, destination):
                 after, action, reason = handlers.apply(field, factor, days)
                 target_id = None
                 already_recorded = False
-                local_canonical = (field.datatype == 'canonical' and isinstance(field.value, str)
-                                   and field.value.startswith('#') and len(field.value) > 1)
+                # Graph identities take precedence over ordinary datatype
+                # handling. All other scalar edits come from Handlers.apply().
                 if field.path in identity_paths:
                     after = identity_paths[field.path]['new_id']
                     action, reason = 'changed', 'resource_id_replaced'
                     already_recorded = identity_paths[field.path]['old_id'] is None
                     if already_recorded:
                         reason = 'resource_id_added'
-                elif (((field.key == 'reference' and isinstance(field.value, str)
-                        and (field.parent_type == 'Reference' or field.datatype is None)) or local_canonical)
-                      and field.reason != 'embedded_resource_preserved'):
-                    owner_path = field.path[:2] if field.path[:2] in slots else ()
-                    key = (owner['resource_id'], _reference_path(field.path[len(owner_path):]), field.value)
-                    resolutions = edges.get(key, set())
-                    if local_canonical and not resolutions:
-                        # Older indexes did not record canonical # links. Their
-                        # exact targets still exist in this root's contained map.
-                        # Do not search other roots or interpret external URLs.
-                        matches = [m for p, m in slots.items() if p and m['old_id'] == field.value[1:]]
-                        resolutions = ({('resolved', matches[0]['resource_id'])} if len(matches) == 1
-                                       else {('ambiguous' if matches else 'unresolved', None)})
-                    if len(resolutions) == 1 and next(iter(resolutions))[0] == 'resolved':
-                        target_id = next(iter(resolutions))[1]
-                        mapped = target(target_id)
-                        if mapped is None:
-                            raise PerturbationError('A resolved reference target is missing.')
-                        if mapped['root_id'] != mapped['resource_id']:
-                            if mapped['root_id'] != root['id']:
-                                raise PerturbationError('A contained reference crosses resource ownership.')
-                            after = '#' + mapped['new_id']
-                        else:
-                            after = mapped['resource_type'] + '/' + mapped['new_id']
-                        action, reason = 'changed', 'reference_rewritten'
-                    elif resolutions:
-                        after, action, reason = field.value, 'unsupported', 'reference_unresolved_or_ambiguous'
+                else:
+                    rewritten = _rewrite_reference(field, owner, slots, edges, target, root['id'])
+                    if rewritten is not None:
+                        after, action, reason, target_id = rewritten
+                # Compare values before mutating the tree. In Python bool is
+                # an int subclass, so exact type checks keep it out of numbers.
                 if type(field.value) in {int, Decimal}:
                     ledger.number(root['resource_type'], field, after)
                 ledger.action(root['resource_type'], field.path, field.datatype, action, reason)
@@ -231,7 +302,8 @@ def _write(source, ledger, types, settings, destination):
             stream.write(dumps(resource) + '\n')
             if number % 1000 == 0:
                 ledger.flush()
-    parameters.cache_clear(); target.cache_clear()
+    parameters.cache_clear()
+    target.cache_clear()
     ledger.flush()
 
 
@@ -241,6 +313,7 @@ def _validate(ledger, destination):
     Undoing changes in this one output tree must reproduce the original SHA256
     digest, including every untouched category, array, text and unknown field.
     Also check each remapped resource/link and each shared numeric/date parameter.
+    This is a transformation check, not the external HL7/profile validator.
     """
     db = ledger.db
     roots = db.execute('SELECT * FROM resource_mappings WHERE resource_id=root_id ORDER BY resource_id')
@@ -259,7 +332,8 @@ def _validate(ledger, destination):
                                      'LEFT JOIN patient_parameters p ON p.patient_id=m.patient_id WHERE c.root_id=? ORDER BY c.path',
                                      (root['root_id'],)):
                 path = loads(change['path'])
-                parent = _slot(value, path[:-1]); key = path[-1][1]
+                parent = _slot(value, path[:-1])
+                key = path[-1][1]
                 if dumps(parent[key]) != change['new_json']:
                     raise PerturbationError('Output differs from its recorded change ledger.')
                 before = loads(change['old_json']) if change['old_present'] else None
@@ -290,6 +364,7 @@ def _validate(ledger, destination):
 
 
 def _report(path, header, ledger):
+    """Stream potentially large field/context sections instead of building lists."""
     with path.open('x', encoding='utf-8') as stream:
         path.chmod(0o600)
         stream.write('{\n')
@@ -299,13 +374,20 @@ def _report(path, header, ledger):
             stream.write(dumps(key) + ':[')
             separator = '\n'
             for row in rows:
-                stream.write(separator + pretty_json(row)); separator = ',\n'
+                stream.write(separator + pretty_json(row))
+                separator = ',\n'
             stream.write(']' + (',\n' if position == 0 else '\n'))
         stream.write('}\n')
 
 
 def perturb(cohort_db, field_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42):
-    """Create perturbed source-derived records and their local audit trail."""
+    """Create perturbed source-derived records and return the report header.
+
+    Both input databases must be completed and match; neither is modified.
+    The field database verifies the profiled snapshot. Its frequencies do not
+    select replacement values: we edit original JSON from the ingestion index.
+    The output must be new, and is usable only after its run status completes.
+    """
     settings = _settings(strength, date_shift_days, seed)
     output = Path(output_dir).absolute()
     if output.exists() or output.is_symlink():
@@ -323,13 +405,20 @@ def perturb(cohort_db, field_db, output_dir, *, strength=0.02, date_shift_days=3
             try:
                 issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
                 db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
+                # 1. Allocate every target ID and one factor/day offset per patient.
                 _prepare(source, ledger, types, settings)
-                db.execute("UPDATE run SET phase='writing'"); db.commit()
+                # 2. Write a private partial export and its field-by-field audit trail.
+                db.execute("UPDATE run SET phase='writing'")
+                db.commit()
                 partial = output / '.perturbed.ndjson.partial'
                 _write(source, ledger, types, settings, partial)
-                db.execute("UPDATE run SET phase='validation'"); db.commit()
+                # 3. Reread what was actually written before reporting success.
+                db.execute("UPDATE run SET phase='validation'")
+                db.commit()
                 validation = _validate(ledger, partial)
-                db.execute("UPDATE run SET phase='aggregation'"); db.commit()
+                # 4. Measure the actual changes, including changes lost to rounding.
+                db.execute("UPDATE run SET phase='aggregation'")
+                db.commit()
                 ledger.aggregate()
                 unsupported = db.execute("SELECT coalesce(sum(frequency),0) FROM field_actions WHERE action='unsupported'").fetchone()[0]
                 status = 'completed_with_warnings' if unsupported or source_run['status'] == 'completed_with_warnings' else 'completed'
@@ -354,19 +443,24 @@ def perturb(cohort_db, field_db, output_dir, *, strength=0.02, date_shift_days=3
                                           'Temperatures, percentages, logarithmic or unknown units remain unchanged.',
                                           'Narrative, attachments and non-identity text remain unchanged.',
                                           'Rounding can reduce small changes or alter ratios; zero-relative change is undefined for zero baselines.']}
-                db.execute("UPDATE run SET phase='reporting'"); db.commit()
+                # 5. Publish both files before the final status becomes complete.
+                # A crash between renames still leaves an unusable in-progress run.
+                db.execute("UPDATE run SET phase='reporting'")
+                db.commit()
                 report_partial = output / '.perturbation-report.json.partial'
                 _report(report_partial, header, ledger)
                 partial.rename(output / 'perturbed.ndjson')
                 report_partial.rename(output / 'perturbation-report.json')
-                db.execute('UPDATE run SET status=?,phase=?', (status, 'complete')); db.commit()
+                db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
+                db.commit()
                 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
                 db.execute('PRAGMA journal_mode=DELETE')
                 return header
             except BaseException as error:
                 db.rollback()
                 state = 'interrupted' if isinstance(error, KeyboardInterrupt) else 'failed'
-                db.execute('UPDATE run SET status=?,failure_code=?', (state, state)); db.commit()
+                db.execute('UPDATE run SET status=?,failure_code=?', (state, state))
+                db.commit()
                 db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
                 db.execute('PRAGMA journal_mode=DELETE')
                 raise

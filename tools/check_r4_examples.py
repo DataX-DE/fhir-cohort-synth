@@ -89,6 +89,11 @@ def write_json(path, value):
 
 
 def run(package, extra_zip, output):
+    """Inventory all example datatypes, then run the deterministic pipeline selection.
+
+    Coverage completion records that cases were attempted. Inspect each case's
+    status and the separate validate() results to determine what passed.
+    """
     output = Path(output).resolve()
     output.mkdir(mode=0o700)  # A retry must use a new directory.
     examples = read_examples(package, extra_zip)
@@ -192,7 +197,8 @@ def issue_key(issue):
     """Match diagnostic categories and paths, excluding changing IDs/values.
 
     A pre-existing invalid field is still invalid; equal diagnostic counts do
-    not certify that resource. Only resources with zero errors pass validation.
+    not certify that resource. Zero errors is necessary; a profile the validator
+    could not load also prevents a claim of conformance to that profile.
     Counts, rather than sets, also detect repeated new failures at one path.
     """
     message_ids = [e.get('valueString', e.get('valueCode')) for e in issue.get('extension', [])

@@ -52,6 +52,10 @@ def summarize_presence(db):
     For object keys, only existing object parents are eligible. For array-item
     paths, presence means an array is nonempty; occurrence count separately
     counts its elements. Root-resource presence gives every resource one vote.
+
+    Example: [{"q": {"value": 10}}, {"q": {}}, {}] has two eligible q objects.
+    q.value is present once and absent once (1/2), not absent twice (1/3).
+    Resource-level presence is separately 1/3 because there are three roots.
     """
     for field in db.execute("SELECT * FROM fields ORDER BY id"):
         fid, rtype = field["id"], field["resource_type"]
@@ -94,6 +98,8 @@ def numeric_summary(rows, count):
     rows must stream (token, frequency) in Decimal order with a binary token
     tie-break. Frequency weights are observations, not distinct-value weights.
     """
+    # Integer ceiling avoids floating-point rank errors. For n=4 and p50,
+    # the rank is 2; cumulative frequency, not distinct-token position, finds it.
     ranks = [(name, (percent * count + 99) // 100) for name, percent in QUANTILES]
     cumulative, next_rank = 0, 0
     minimum, maximum, quantiles = None, None, {}

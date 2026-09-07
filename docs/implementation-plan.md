@@ -36,12 +36,17 @@ its automatic measurement contexts still separate before/after numeric reports.
 - Shared scaling preserves ratios and series shape before rounding, but does
   not establish every clinical dependency or unchanged cohort distributions.
 - No categorical randomization, trajectory sampling, full FHIR validation or
-  hospital-specific profile validation is included.
+  hospital-specific profile validation is included in the runtime commands.
+
+Separate development audits now compare original and perturbed public examples
+with the external HL7 validator: [R4 coverage](validation-r4.md) and
+[MII coverage](validation-mii.md). Their reports distinguish pipeline completion,
+pre-existing errors, new errors and profiles that could not be checked.
 
 ## Subsequent work
 
 Use the coverage report with the hospital to identify additional units and
-profile-specific needs. Pin their exact profile packages before adding offline
-conformance validation. Bundle a Python runtime and launcher after the intended
+profile-specific needs. Confirm and pin their deployed profile packages before
+integrating offline conformance validation into their workflow. Bundle a Python runtime and launcher after the intended
 hospital workflow is tested. Broader statistical fidelity and privacy assessment
 are separate work; local execution alone does not anonymize records.

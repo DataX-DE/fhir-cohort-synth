@@ -56,6 +56,8 @@ class Node:
 
     Containers have no scalar_json. Their children and shape reconstruct their
     value without storing a second full payload at every nested level.
+    Explicit null has scalar_json='null'; an absent key creates no node at all.
+    Empty objects/arrays still have nodes, so these cases remain distinguishable.
     """
     ordinal: int
     parent_ordinal: int | None
@@ -78,16 +80,17 @@ def walk_json(value):
     tree, including contained resources, is traversed here; the caller avoids
     separately traversing the ingestion index's duplicate contained rows.
     """
+    # Each stack entry is (value, parent ordinal, concrete path, statistical path).
     stack = [(value, None, (), ())]
     ordinal = 0
     while stack:
-        current, parent, path, statistical = stack.pop()
+        current, parent_ordinal, path, statistical = stack.pop()
         kind = json_kind(current)
         if kind == "object" and any(not isinstance(key, str) for key in current):
             raise ValueError("JSON object keys must be strings")
         scalar = None if kind in {"object", "array"} else dumps(current)
         yield Node(
-            ordinal=ordinal, parent_ordinal=parent, path=path,
+            ordinal=ordinal, parent_ordinal=parent_ordinal, path=path,
             statistical_path=statistical, kind=kind, scalar_json=scalar,
             number_format=("integer" if isinstance(current, int) else "decimal") if kind == "number" else None,
             string_length=len(current) if kind == "string" else None,
@@ -96,6 +99,8 @@ def walk_json(value):
             object_keys_json=dumps(sorted(current)) if kind == "object" else None,
             array_types_json=dumps([json_kind(item) for item in current]) if kind == "array" else None,
         )
+        # Children point to this node's ordinal. Reverse pushes preserve source
+        # order on a last-in-first-out stack, including heterogeneous arrays.
         if kind == "object":
             for key, child in reversed(list(current.items())):
                 segment = (("key", key),)

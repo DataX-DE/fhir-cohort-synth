@@ -40,6 +40,7 @@ def patient_references(value):
 
 
 def resource_roots(resource):
+    """Yield the resource population ingestion will index, unpacking Bundle envelopes."""
     if resource.get('resourceType') == 'Bundle':
         for entry in resource.get('entry', []):
             if isinstance(entry.get('resource'), dict):
@@ -71,6 +72,12 @@ def unchecked_profile_paths(issues):
 
 
 def run(packages, output):
+    """Run the fixed public package examples and save paired original/output roots.
+
+    A completed audit means every case was attempted, not that every example
+    passed. Each case retains its own ingestion/pipeline status. Invented
+    supporting Patients are labelled separately from official example resources.
+    """
     output = Path(output).resolve()
     output.mkdir(mode=0o700)
     report = {'status': 'in_progress', 'fhir_version': '4.0.1',
@@ -91,6 +98,8 @@ def run(packages, output):
         report['packages'].append({'module': module, 'name': metadata['name'], 'version': version,
                                   'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                                   'example_files': len(examples), 'dependencies': metadata.get('dependencies', {})})
+        # 1. Separate Bundle lookup scopes and malformed-ID cases. One rejected
+        # example must not prevent testing the other public files in its module.
         standalone = [(n, r) for n, r in examples if r['resourceType'] != 'Bundle']
         selections = [(module, [(n, r) for n, r in standalone if not invalid_id(r)])]
         invalid = [(n, r) for n, r in standalone if invalid_id(r)]
@@ -122,6 +131,8 @@ def run(packages, output):
                                      'code': 'invented-support', 'display': 'Invented test Patient'}]}})
             write_json(output / 'coverage.json', report)
             try:
+                # 2. Use the same three APIs as the hospital CLI. This harness
+                # supplies fixtures and records results; it does not repair data.
                 ingested = ingest([inputs], directory / 'ingested')
                 case['ingestion_status'] = ingested['status']
                 case['ingestion_issues'] = ingested['issues']
@@ -136,6 +147,8 @@ def run(packages, output):
                     for side in ('before', 'after'):
                         (directory / side).mkdir(mode=0o700)
                     case['pairs'] = []
+                    # 3. Pair by the pipeline's root order before IDs change.
+                    # strict=True catches missing or extra output lines.
                     with closing(sqlite3.connect(cohort)) as db, (directory / 'perturbed/perturbed.ndjson').open() as stream:
                         for row, line in zip(db.execute('SELECT id,payload FROM resources WHERE contained=0 ORDER BY id'), stream, strict=True):
                             before, after = loads(row[1]), loads(line)
@@ -156,6 +169,12 @@ def run(packages, output):
 
 
 def validate(output, validator, java_home):
+    """Compare offline HL7 diagnostics for the same original and perturbed roots.
+
+    Track new errors separately from errors already in public examples. Also
+    track unloaded profiles: a warning-only result may still be unvalidated
+    against its declared profile. This Java step is development-only.
+    """
     output, validator, java_home = (Path(p).resolve() for p in (output, validator, java_home))
     coverage = loads((output / 'coverage.json').read_text())
     if coverage['status'] != 'completed':
@@ -209,6 +228,9 @@ def validate(output, validator, java_home):
                 after = outcomes[str(source / 'after' / pair['file'])]
                 pre = Counter(issue_key(i) for i in before if i.get('severity') in {'error', 'fatal'})
                 post = Counter(issue_key(i) for i in after if i.get('severity') in {'error', 'fatal'})
+                # Counter subtraction retains positive increases. An existing
+                # error is still reported above, but does not become a new error
+                # merely because perturbation replaced the resource's ID.
                 report['pairs'].append(dict(pair, case=case['name'], before_errors=sum(pre.values()),
                     after_errors=sum(post.values()),
                     new_errors=[{'key': loads(k), 'count': n} for k, n in sorted((post - pre).items())],
@@ -217,6 +239,8 @@ def validate(output, validator, java_home):
                     before_warnings=sum(i.get('severity') == 'warning' for i in before),
                     after_warnings=sum(i.get('severity') == 'warning' for i in after)))
         write_json(destination / 'comparison.json', report)
+    # This status describes execution. Per-pair errors/unchecked profiles below
+    # describe conformance; zero newly introduced errors alone is not a pass.
     report['status'] = 'completed' if all(c['status'] == 'completed' for c in report['cases']) else 'completed_with_validator_failures'
     report['cached_packages'] = sorted(p.name for p in (java_home / '.fhir/packages').iterdir() if p.is_dir() and '#' in p.name)
     for population in ('official', 'support'):

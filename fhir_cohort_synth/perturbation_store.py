@@ -1,4 +1,13 @@
-"""SQLite ledger and bounded statistical aggregation for perturbation runs."""
+"""SQLite ledger and bounded statistical aggregation for perturbation runs.
+
+resource_mappings and patient_parameters describe how to transform resources.
+changes records individual edits so validation can undo them. field_actions
+counts every visited node, including preserved containers. numeric_* tables
+measure actual before/after values in compatible measurement contexts.
+
+All original/replacement numeric tokens are TEXT, never SQLite REAL. Small
+in-memory counters combine repeated keys, then flush into exact database totals.
+"""
 from collections import Counter
 from functools import lru_cache
 import sqlite3
@@ -20,10 +29,14 @@ CREATE TABLE run (id INTEGER PRIMARY KEY CHECK(id=1), schema_version INTEGER NOT
  source_fingerprint TEXT NOT NULL, definitions_json TEXT NOT NULL, failure_code TEXT);
 CREATE TABLE patient_parameters (patient_id INTEGER PRIMARY KEY, identity TEXT NOT NULL,
  factor TEXT NOT NULL, minimum_days INTEGER NOT NULL, maximum_days INTEGER NOT NULL, days INTEGER);
+-- Integer IDs refer to ingestion rows; old_id/new_id are FHIR strings.
+-- path locates a resource within its root tree. NULL during preparation means
+-- the contained path has not yet been found; the root itself uses '[]'.
 CREATE TABLE resource_mappings (resource_id INTEGER PRIMARY KEY, root_id INTEGER NOT NULL,
  patient_id INTEGER, resource_type TEXT NOT NULL, old_id TEXT, new_id TEXT NOT NULL UNIQUE,
  path TEXT, digest TEXT NOT NULL);
 CREATE INDEX mapping_root ON resource_mappings(root_id);
+-- old_present=0 distinguishes an added resource ID from an original JSON null.
 CREATE TABLE changes (root_id INTEGER NOT NULL, path TEXT NOT NULL, owner_id INTEGER NOT NULL,
  old_present INTEGER NOT NULL, old_json TEXT, new_json TEXT NOT NULL,
  reason TEXT NOT NULL, datatype TEXT, target_id INTEGER,
@@ -45,6 +58,7 @@ CREATE TABLE source_issues (severity TEXT, code TEXT, frequency INTEGER);
 
 
 def normalized(path):
+    """Group array positions under one field path without changing the actual tree."""
     return tuple(('item', None) if kind == 'index' else (kind, key) for kind, key in path)
 
 
@@ -57,6 +71,8 @@ def normalized_path(path):
 
 
 class Ledger:
+    """Own one new state database; perturb() controls run phases and completion."""
+
     def __init__(self, path, settings, fingerprint, metadata):
         with path.open('xb'):
             pass
@@ -68,46 +84,56 @@ class Ledger:
         self.db.execute('INSERT INTO run VALUES (1,1,?,?,?,?,?,NULL)',
                         ('in_progress', 'preparation', dumps(settings), fingerprint, dumps(metadata)))
         self.db.commit()
-        self.actions, self.frequencies, self.samples = Counter(), Counter(), Counter()
+        self.actions = Counter()
+        self.frequencies = Counter()
+        self.samples = Counter()
         self.context_id = lru_cache(maxsize=4096)(self._context_id)
 
     def _context_id(self, context, resource_type, path, datatype):
+        """Reuse one row for identical measurement contexts; cache only bounded IDs."""
         self.db.execute('INSERT OR IGNORE INTO numeric_contexts(context_json,resource_type,path,datatype) VALUES (?,?,?,?)',
                         (context, resource_type, path, datatype))
         return self.db.execute('SELECT id FROM numeric_contexts WHERE context_json=?', (context,)).fetchone()[0]
 
     def action(self, resource_type, path, datatype, action, reason):
+        """Count one visited node, not one resource or one changed scalar."""
         self.actions[resource_type, normalized_path(path)[1], datatype or 'unknown', action, reason] += 1
 
     def number(self, resource_type, field, after):
+        """Count this numeric occurrence once, even when its value stayed unchanged."""
         # Code, comparator and exact unit identifiers remain part of each
         # context. A shared JSON path is never enough to pool measurements.
-        q = field.quantity or {}
+        quantity = field.quantity or {}
         segments, path = normalized_path(field.path)
         datatype = field.datatype or 'unknown'
         context = dumps([resource_type, segments, datatype, field.concept,
-                         {k: q[k] for k in ('system', 'code', 'unit', 'comparator') if k in q}])
-        identity = self.context_id(context, resource_type, path, datatype)
+                         {key: quantity[key] for key in ('system', 'code', 'unit', 'comparator') if key in quantity}])
+        context_id = self.context_id(context, resource_type, path, datatype)
         before = field.value
-        self.samples[identity, 'samples'] += 1
-        self.samples[identity, 'changed'] += dumps(before) != dumps(after)
-        self.samples[identity, 'zero_baselines'] += before == 0
-        self.frequencies[identity, 'before', dumps(before)] += 1
-        self.frequencies[identity, 'after', dumps(after)] += 1
+        self.samples[context_id, 'samples'] += 1
+        self.samples[context_id, 'changed'] += dumps(before) != dumps(after)
+        self.samples[context_id, 'zero_baselines'] += before == 0
+        self.frequencies[context_id, 'before', dumps(before)] += 1
+        self.frequencies[context_id, 'after', dumps(after)] += 1
         relative = relative_change(before, after)
         if relative is not None:
-            self.frequencies[identity, 'relative', dumps(relative)] += 1
-            self.frequencies[identity, 'absolute_relative', dumps(relative.copy_abs())] += 1
+            self.frequencies[context_id, 'relative', dumps(relative)] += 1
+            self.frequencies[context_id, 'absolute_relative', dumps(relative.copy_abs())] += 1
 
     def flush(self):
+        """Add this batch to persisted totals, then clear only the batch counters."""
         self.db.executemany('INSERT INTO field_actions VALUES (?,?,?,?,?,?) ON CONFLICT DO UPDATE SET frequency=frequency+excluded.frequency',
                             ((*key, value) for key, value in self.actions.items()))
         self.db.executemany('INSERT INTO numeric_frequencies VALUES (?,?,?,?) ON CONFLICT DO UPDATE SET frequency=frequency+excluded.frequency',
                             ((*key, value) for key, value in self.frequencies.items()))
         for column in ('samples', 'changed', 'zero_baselines'):
+            # SQL identifiers cannot be bound as parameters. These column names
+            # are a fixed internal list; all data values still use placeholders.
             self.db.executemany(f'UPDATE numeric_contexts SET {column}={column}+? WHERE id=?',
                                 ((n, identity) for (identity, name), n in self.samples.items() if name == column))
-        self.actions.clear(); self.frequencies.clear(); self.samples.clear()
+        self.actions.clear()
+        self.frequencies.clear()
+        self.samples.clear()
         self.db.commit()
 
     def maybe_flush(self):
@@ -117,6 +143,11 @@ class Ledger:
             self.flush()
 
     def aggregate(self):
+        """Stream each context's exact frequencies through the shared quantile estimator.
+
+        Before/after sample counts include zero baselines. Relative-change
+        summaries exclude them because division by zero is undefined.
+        """
         self.flush()
         for row in self.db.execute('SELECT id FROM numeric_contexts ORDER BY id'):
             identity = row[0]
@@ -135,6 +166,7 @@ class Ledger:
         self.db.commit()
 
     def report_fields(self):
+        """Yield readable action counts, using typed paths as field identifiers."""
         for row in self.db.execute('SELECT * FROM field_actions ORDER BY resource_type,path,datatype,action,reason'):
             item = dict(row)
             item['path'] = loads(item['path'])
@@ -142,6 +174,7 @@ class Ledger:
             yield item
 
     def report_numbers(self):
+        """Yield summary rows; source coding strings stay in the local database."""
         for row in self.db.execute('SELECT id,resource_type,path,datatype,samples,changed,zero_baselines FROM numeric_contexts ORDER BY id'):
             item = dict(row)
             item['path'] = loads(item['path'])

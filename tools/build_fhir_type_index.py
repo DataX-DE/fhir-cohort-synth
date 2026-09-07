@@ -11,6 +11,12 @@ import tarfile
 
 
 def build(package, destination):
+    """Keep base datatype lookup information and provenance, not validation rules.
+
+    Runtime TypeIndex needs element types, choice fields and content references.
+    Cardinality minima, terminology bindings and invariants are not retained,
+    so this compact index cannot substitute for a full FHIR validator.
+    """
     definitions = {}
     with tarfile.open(package, 'r:gz') as archive:
         metadata = json.load(archive.extractfile('package/package.json'))
@@ -20,6 +26,8 @@ def build(package, destination):
             if not member.name.startswith('package/StructureDefinition-') or not member.name.endswith('.json'):
                 continue
             definition = json.load(archive.extractfile(member))
+            # Profiles constrain existing types. Only base specializations
+            # define entries here; snapshots already include inherited fields.
             if definition.get('derivation') not in {None, 'specialization'} or 'snapshot' not in definition:
                 continue
             elements = {}

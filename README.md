@@ -285,9 +285,15 @@ in the database for inspection.
 Generic profiling provides exact field distributions from completed indexes.
 Perturbation applies coordinated transformations using FHIR datatype definitions
 and the source resource graph. See the [implementation status](docs/implementation-plan.md).
-Full FHIR/profile validation remains future work.
+Separate development tools run the external HL7 validator on public
+[R4 examples](docs/validation-r4.md) and [MII examples](docs/validation-mii.md).
+These audits are not part of the hospital CLI; validating a hospital export
+requires its exact deployed profile packages.
 
 ## Development
+
+Start with the [code walkthrough](docs/code-walkthrough.md) for one Observation's
+journey from input JSON to output, the key terms and the reading order.
 
 To follow the code, start with `ingest()` in
 [`ingest.py`](fhir_cohort_synth/ingest.py). Its numbered comments describe the
@@ -297,7 +303,7 @@ The module and method docstrings explain the database IDs, reference scopes
 and patient-grouping rules. [`cli.py`](fhir_cohort_synth/cli.py) handles arguments
 and exit codes; `jsonio.py` and `profiles.py` contain the smaller helpers.
 
-For the new command, start at `profile_index()` in
+For profiling, start at `profile_index()` in
 [`profiling.py`](fhir_cohort_synth/profiling.py). It calls the generic walker in
 [`json_fields.py`](fhir_cohort_synth/json_fields.py), stores the nodes through
 [`field_store.py`](fhir_cohort_synth/field_store.py), then computes distributions

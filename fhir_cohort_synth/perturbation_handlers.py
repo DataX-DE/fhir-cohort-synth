@@ -22,7 +22,11 @@ STAMP = re.compile(r'^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[
 
 
 def full_date(value, datatype):
-    """Validate the date and suffix without reformatting timezone/precision."""
+    """Return (calendar date, None), or (None, reason) if it cannot be shifted.
+
+    Validate the timestamp suffix but leave its original text intact. Partial
+    dates such as '2020-02' must not acquire a guessed day during perturbation.
+    """
     if not isinstance(value, str):
         return None, 'invalid_date'
     if re.fullmatch(r'\d{4}(?:-\d{2})?', value) and datatype != 'instant':
@@ -49,6 +53,7 @@ def full_date(value, datatype):
 
 
 def shift_date(value, days):
+    """Shift a validated full date; copy the time/zone/fraction suffix verbatim."""
     shifted = date.fromisoformat(value[:10]) + timedelta(days=days)
     return shifted.isoformat() + value[10:]
 
@@ -61,6 +66,12 @@ def label(seed, role, value):
 
 
 def patient_factor(seed, identity, strength):
+    """Draw one reproducible factor in [1 - strength, 1 + strength].
+
+    Deriving the random stream from this patient's identity avoids dependence
+    on the order in which patients are processed. Convert random bits directly
+    to Decimal so binary floating-point rounding never enters quantity math.
+    """
     rng = random.Random(label(seed, 'quantity-factor', identity))
     with localcontext() as ctx:
         ctx.prec = max(50, len(strength.as_tuple().digits) + 25)
@@ -69,11 +80,17 @@ def patient_factor(seed, identity, strength):
 
 
 def patient_days(seed, identity, low, high):
+    """Draw one inclusive whole-day offset from this patient's prechecked range."""
     return random.Random(label(seed, 'date-offset', identity)).randint(low, high)
 
 
 def scale(value, factor):
-    """Preserve the original decimal quantum, including integer JSON tokens."""
+    """Multiply and round to the input's represented precision using half-even.
+
+    The quantum is the smallest represented step: 10.00 uses 0.01, while the
+    integer token 10 uses 1. Thus 10.00 * 1.012 becomes 10.12, but 10 * 1.012
+    becomes 10. Small changes can disappear; reports count those unchanged values.
+    """
     number = Decimal(value)
     quantum = Decimal(1).scaleb(number.as_tuple().exponent)
     with localcontext() as ctx:
@@ -83,6 +100,7 @@ def scale(value, factor):
 
 
 def relative_change(before, after):
+    """Return (after - before) / abs(before), or None for a zero baseline."""
     if before == 0:
         return None  # Undefined, even when zero remains zero; report separately.
     with localcontext() as ctx:
@@ -91,30 +109,45 @@ def relative_change(before, after):
 
 
 class Handlers:
+    """Decide scalar edits; resource IDs and graph links are handled by the writer."""
+
     def __init__(self, seed):
         self.seed = seed
         registry = json.loads(files('fhir_cohort_synth').joinpath('data/linear-units.json').read_text())
         self.units = {(system, code) for system, codes in registry['systems'].items() for code in codes}
 
     def quantity_reason(self, field):
+        """Return None for an eligible Quantity.value, otherwise its exclusion reason.
+
+        The exact unit system/code pair determines support. Display labels such
+        as 'unit' are retained text, not evidence that a unit can be scaled.
+        """
         if field.reason:
             return field.reason
         if field.quantity is None or field.parent is not field.quantity or field.key != 'value':
             return 'standalone_number_preserved'
-        q = field.quantity
-        if not isinstance(q.get('system'), str) or not isinstance(q.get('code'), str) or not q['system'] or not q['code']:
+        quantity = field.quantity
+        if (not isinstance(quantity.get('system'), str) or not isinstance(quantity.get('code'), str)
+                or not quantity['system'] or not quantity['code']):
             return 'missing_unit'
-        if (q['system'], q['code']) not in self.units:
+        if (quantity['system'], quantity['code']) not in self.units:
             return 'unsupported_unit'
         if type(field.value) not in {int, Decimal}:
             return 'invalid_quantity_value'
         return None
 
     def apply(self, field, factor, days):
-        """Return (replacement, action, reason) for one existing JSON node."""
+        """Return (replacement, action, reason) without changing the input tree.
+
+        Check preservation rules first, then identities, dates and quantities.
+        None for factor/days means no unique patient owns the resource. An
+        'unsupported' action also preserves the value, but records a limitation.
+        """
         value = field.value
         if field.reason:
-            return value, 'unsupported' if field.reason.startswith('unknown') or field.reason == 'embedded_resource_preserved' else 'preserved', field.reason
+            unsupported = field.reason.startswith('unknown') or field.reason == 'embedded_resource_preserved'
+            action = 'unsupported' if unsupported else 'preserved'
+            return value, action, field.reason
         if isinstance(value, (dict, list)) or value is None:
             return value, 'preserved', 'structure_or_null_preserved'
         if value == '':
@@ -126,10 +159,15 @@ class Handlers:
                 # This identifier system requires a complete URI. A bare dummy
                 # string violates base FHIR even though Identifier.value is string.
                 unique = UUID(hex=token, version=4)
-                result = 'urn:oid:2.25.' + str(unique.int) if value.startswith('urn:oid:') else 'urn:uuid:' + str(unique)
+                if value.startswith('urn:oid:'):
+                    result = 'urn:oid:2.25.' + str(unique.int)
+                else:
+                    result = 'urn:uuid:' + str(unique)
             else:
                 result = 'pert-' + token
             return result, 'changed', 'identifier_replaced'
+        # HumanName.given is an array: its scalar has an integer key. Recover
+        # 'given' from the preceding path segment instead of treating 0 as a name.
         name_key = field.key if isinstance(field.key, str) else field.path[-2][1]
         if field.parent_type == 'HumanName' and name_key in NAME_FIELDS and isinstance(value, str):
             return 'Dummy-' + label(self.seed, 'name-' + name_key, value)[:16], 'changed', 'name_replaced'
