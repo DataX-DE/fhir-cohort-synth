@@ -6,6 +6,7 @@ been fully written. Failed/interrupted output must be retried in a new folder.
 """
 from contextlib import contextmanager
 import hashlib
+from itertools import zip_longest
 from pathlib import Path
 import sqlite3
 
@@ -22,8 +23,8 @@ class ProfileError(InputError):
 def source_fingerprint(source):
     """Identify a cohort snapshot independently of its filesystem location.
 
-    Generation combines conditional values with patient/encounter counts. Both
-    must come from the same resources AND resolved graph. Stream the signature
+    Downstream operations combine fields with patient/resource relationships.
+    Both must come from the same resources AND resolved graph. Stream the signature
     rather than collecting the cohort; source strings never enter the report.
     """
     digest = hashlib.sha256()
@@ -83,6 +84,52 @@ def open_source(path):
         yield source, run, path.resolve()
     finally:
         source.close()
+
+
+@contextmanager
+def open_matching_fields(path, source, source_run):
+    """Read a completed field index describing the same resource snapshot.
+
+    Perturbation uses this check to reject mixed ingestion/profiling runs.
+    Comparisons stream through SQLite and neither input is modified.
+    """
+    path = Path(path).absolute()
+    if path.is_symlink() or not path.is_file():
+        raise ProfileError("Input must be an existing field database, not a symlink.")
+    db = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
+    db.row_factory = sqlite3.Row
+    try:
+        db.execute("PRAGMA query_only=ON")
+        db.execute("BEGIN")
+        runs = db.execute("SELECT status,schema_version,source_schema_version,source_status,source_fhir_version FROM run").fetchall()
+        if (len(runs) != 1 or runs[0]["schema_version"] != 1 or
+                runs[0]["source_schema_version"] != 1):
+            raise ProfileError("Unsupported field database schema; expected version 1.")
+        run = runs[0]
+        if run["status"] not in {"completed", "completed_with_warnings"}:
+            raise ProfileError("The field profiling run is incomplete.")
+        if (run["source_status"] != source_run["status"] or
+                run["source_fhir_version"] != source_run["fhir_version"]):
+            raise ProfileError("The field and ingestion databases do not match.")
+        # File paths can change when a hospital copies a completed run. Match
+        # resource keys/digests and occurrence lookup contexts, not file names.
+        # Stream these comparisons rather than holding the cohort in memory.
+        comparisons = [
+            ("SELECT resource_id,resource_type,identity,digest FROM source_resources ORDER BY resource_id",
+             "SELECT id,resource_type,identity,digest FROM resources WHERE contained=0 ORDER BY id"),
+            ("SELECT occurrence_id,resource_id,locator,context,full_url FROM source_occurrences ORDER BY occurrence_id",
+             "SELECT o.id,o.resource_id,o.locator,o.context,o.full_url FROM occurrences o "
+             "JOIN resources r ON r.id=o.resource_id WHERE r.contained=0 ORDER BY o.id"),
+        ]
+        for field_sql, source_sql in comparisons:
+            for left, right in zip_longest(db.execute(field_sql), source.execute(source_sql)):
+                if left is None or right is None or tuple(left) != tuple(right):
+                    raise ProfileError("The field and ingestion databases do not match.")
+        db.execute("SELECT id,resource_id,parent_id,concrete_path,kind,scalar_json,array_index,array_length,object_keys_json FROM nodes LIMIT 0")
+        source.execute("SELECT source_resource_id,path,literal,kind,status,target_resource_id FROM resource_references LIMIT 0")
+        yield db
+    finally:
+        db.close()
 
 
 def pretty_json(value, level=0):

@@ -89,7 +89,7 @@ def summarize_numbers(db):
 
 
 def numeric_summary(rows, count):
-    """Share the exact estimator between marginal and conditional profiles.
+    """Share the exact estimator between source and perturbation profiles.
 
     rows must stream (token, frequency) in Decimal order with a binary token
     tie-break. Frequency weights are observations, not distinct-value weights.

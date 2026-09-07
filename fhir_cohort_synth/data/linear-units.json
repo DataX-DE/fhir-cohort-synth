@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "description": "Exact system/code pairs eligible for multiplicative perturbation. No display-text inference or general UCUM parsing. Temperature, percent, logarithmic and time-only units are intentionally excluded.",
+  "systems": {
+    "http://unitsofmeasure.org": ["g", "kg", "mg", "ug", "ng", "pg", "m", "cm", "mm", "[in_i]", "L", "mL", "uL", "fL", "mm[Hg]", "cm[H2O]", "/min", "mg/dL", "g/dL", "mmol/L", "meq/L", "10*3/uL", "10*6/uL", "L/min", "mL/min", "mL/h", "[IU]", "[IU]/L"],
+    "http://mimic.mit.edu/fhir/mimic/CodeSystem/mimic-units": ["g", "kg", "mg", "mcg", "ng", "pg", "m", "cm", "mm", "Inch", "L", "ml", "mL", "uL", "fL", "mmHg", "mm Hg", "cmH2O", "bpm", "insp/min", "mg/dL", "g/dL", "mmol/L", "mEq/L", "K/uL", "m/uL", "L/min", "ml/hr", "mL/hr", "mL/min", "IU/L"]
+  }
+}
