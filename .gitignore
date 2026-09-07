@@ -9,4 +9,4 @@ work/
 local-data/
 ingested/
 *.sqlite*
-data/
+/data/

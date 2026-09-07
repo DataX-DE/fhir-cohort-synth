@@ -1,24 +1,23 @@
 # fhir-cohort-synth
 
-An offline tool for ingesting and statistically profiling local FHIR exports.
-**Ingestion, complete recursive JSON extraction and exact field/conditional
-distributions are implemented.** The next stage will perturb selected values
-while retaining existing linked resource structures and event sequences.
-Perturbation is planned, not implemented. The earlier independent cohort
-sampler has been retired. There is no current `generate` command.
+An offline tool for ingesting, statistically profiling and perturbing local FHIR exports.
+**Ingestion, complete recursive JSON extraction and exact field
+distributions are implemented, along with the `perturb` command.** Perturbation
+changes supported quantities, full dates and identity fields while retaining
+the source resource graph. The earlier independent cohort sampler has been
+retired. There is no current `generate` command.
 
-The planned output is **perturbed source-derived data**, for local hospital use.
+The perturbation output is **perturbed source-derived data**, for local hospital use.
 The current scope covers structural and statistical fidelity; it makes no
 privacy, anonymization or differential-privacy guarantee. Local execution
 describes where processing occurs, not whether the data are anonymous.
 Privacy assessment is outside the current implementation scope. No model
-training is required for the implemented profiling stages.
+training is required.
 
-The Python dependency API groups related fields and follows direct resource
-references using explicit JSON rules. Conditional profiling now counts exact
-joint outcomes within those configured contexts; see
-[field relationship rules](docs/dependencies.md) and
-[conditional distributions](docs/conditional-statistics.md).
+The workflow is **ingest → profile → perturb → validate and report**.
+Ingestion resolves resource links and patient ownership. Profiling describes
+the original JSON fields. Perturbation reads the original resource trees and
+applies patient-specific changes using FHIR datatypes and supported units.
 
 ## Run ingestion
 
@@ -87,8 +86,8 @@ database and is outside this resource-root population.
 
 These are **generic JSON distributions**, without clinical grouping or value
 dependency modeling. For example, a path shared by several measurement types
-gets a marginal distribution across those types; later conditional profiling
-must use their associated codes, units and other context before sampling.
+gets a marginal distribution across those types. The perturbation report
+separately compares measurements within their code, medication and unit contexts.
 Dates remain strings, numeric-looking strings are not converted, and units
 are not normalized. Parent/resource associations retain the required context.
 
@@ -107,34 +106,34 @@ runs may retain local partial data; retry in a new directory.
 See [profiling data and queries](docs/profiling-schema.md) for the node layout,
 exact-frequency queries, denominator definitions and an example walkthrough.
 
-## Calculate conditional distributions
+## Perturb existing records
 
-After ingestion and field profiling, use rules with a `statistics` section:
+After ingestion and field profiling, run:
 
 ```sh
-python3 fhir_synth.py profile-conditional --input local-data/demo/cohort.sqlite --fields local-data/profile/field-occurrences.sqlite --rules examples/dependency-rules.json --output local-data/conditional
+python3 fhir_synth.py perturb --input local-data/demo/cohort.sqlite --fields local-data/profile/field-occurrences.sqlite --output local-data/perturbed --strength 0.02 --date-shift-days 30 --seed 42
 ```
 
-This creates `conditional-statistics.sqlite` and `conditional-statistics.json`.
-Each configured object contributes one count; nested collections stay grouped.
-Outputs include exact joint frequencies, conditional probabilities, numeric
-summaries and separate resource/patient support counts. Unsupported linked
-contexts are excluded with explicit counts. Inputs remain read-only, and the
-output directory must be new. See the [worked calculation and API guide](docs/conditional-statistics.md).
+Each patient receives one factor between **0.98 and 1.02** for supported linear
+quantities and one date offset within **−30 to +30 days**. The engine uses bundled
+FHIR R4 4.0.1 datatype definitions, Decimal arithmetic and a small exact unit
+registry that includes MIMIC aliases. It replaces resource IDs, resolved
+references, Identifier values and HumanName strings. Clinical codes, booleans,
+narrative, attachments, unknown fields and unsupported units remain unchanged.
+Shared or unassigned resources retain their quantities and dates.
 
-## Next: perturb existing records
+The new directory contains `perturbed.ndjson`, `perturbation-state.sqlite` and
+`perturbation-report.json`. The report measures actual changes after rounding;
+small changes can round back to the original value. Exact local mappings and
+numeric distributions remain in SQLite. All files are source-derived, including
+text deliberately preserved in the NDJSON and original values in the audit trail.
 
-The replacement will use the original resource graph and extracted field
-associations. Common FHIR datatype handlers and explicit field policies will
-coordinate numeric changes, categorical treatment, date shifts, identifier
-replacement and text handling across linked records. Unknown fields will have
-explicit coverage status; generic extraction alone does not determine a valid
-transformation for them.
-
-Source profiles provide the baseline for measuring changes in distributions,
-relationships and event intervals. Preserving every distribution exactly is not
-promised. See the [revised implementation plan](docs/implementation-plan.md)
-for the selected scope, field handling and validation requirements.
+Validation verifies preserved content, structure, resolved reference targets
+and use of the shared patient parameters. It does not establish full FHIR or
+hospital-profile conformance. See the [worked example and implementation guide](docs/perturbation.md)
+for handling rules, limitations, API usage and report queries.
+The [MIMIC perturbation review](docs/validation-mimic-perturbation.md) records
+coverage across 928,935 resources and 13 resource types, including rounding effects.
 
 ## Supported input
 
@@ -180,11 +179,11 @@ Supporting and unrecognized resource types are also retained and counted.
 An unrecognized profile is retained, rather than silently replaced. Exact
 `meta.profile` canonical URLs and their optional `|version` suffixes are indexed
 separately. Extensions and modifier extensions remain in the payload and have
-a URL inventory. No codes, units, dates or patient identifiers are transformed.
+a URL inventory. Ingestion itself transforms no codes, units, dates or patient identifiers.
 
 ## Output
 
-Each run creates a **new** directory containing:
+Each ingestion run creates a **new** directory containing:
 
 | File | Contents |
 | --- | --- |
@@ -274,12 +273,10 @@ History Bundles and entries without resources are reported as unsupported
 snapshot inputs. Resource-free entries and Bundle/entry metadata are retained
 in the database for inspection.
 
-Generic profiling now provides exact field distributions from completed indexes.
-The next stage defines coordinated transformations of existing records using
-their field semantics and relationships. See the
-[implementation plan](docs/implementation-plan.md) for the retained foundation
-and planned perturbation stage for local use. Full FHIR/profile validation
-remains future work.
+Generic profiling provides exact field distributions from completed indexes.
+Perturbation applies coordinated transformations using FHIR datatype definitions
+and the source resource graph. See the [implementation status](docs/implementation-plan.md).
+Full FHIR/profile validation remains future work.
 
 ## Development
 
@@ -296,6 +293,11 @@ For the new command, start at `profile_index()` in
 [`json_fields.py`](fhir_cohort_synth/json_fields.py), stores the nodes through
 [`field_store.py`](fhir_cohort_synth/field_store.py), then computes distributions
 and report fragments in [`field_statistics.py`](fhir_cohort_synth/field_statistics.py).
+
+For perturbation, start at `perturb()` in
+[`perturbation.py`](fhir_cohort_synth/perturbation.py). Datatype traversal lives in
+`fhir_types.py`, scalar transformations in `perturbation_handlers.py`, and the
+SQLite audit trail and distribution summaries in `perturbation_store.py`.
 
 ```sh
 python3 -m unittest discover -s tests -v
