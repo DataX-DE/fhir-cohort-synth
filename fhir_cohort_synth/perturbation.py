@@ -17,10 +17,11 @@ from pathlib import Path
 
 from .fhir_types import TypeIndex
 from .ingest import InputError
+from .cohort import open_source, source_fingerprint
 from .jsonio import dumps, loads
 from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patient_days, patient_factor, scale, shift_date
 from .perturbation_store import Ledger
-from .profiling import open_matching_fields, open_source, pretty_json, source_fingerprint
+from .perturbation_report import build_report, write_report
 
 
 class PerturbationError(InputError):
@@ -30,7 +31,7 @@ class PerturbationError(InputError):
 ROOTS = 'SELECT id,payload,digest,resource_type FROM resources WHERE contained=0 ORDER BY id'
 
 
-def _settings(strength, date_shift_days, seed):
+def validate_settings(strength, date_shift_days, seed):
     """Validate public options once; keep strength as Decimal throughout the run."""
     try:
         if isinstance(strength, bool):
@@ -79,12 +80,6 @@ def _slots(db, root_id, resource):
 def _owner(slots, path):
     """Return the resource owning a field; its patient_id may still be absent."""
     return slots.get(path[:2], slots[()])
-
-
-def _prepare(source, ledger, types, settings):
-    """Prepare all identities before links are written, then choose safe offsets."""
-    _prepare_identities(source, ledger, settings)
-    _prepare_date_offsets(source, ledger, types, settings)
 
 
 def _prepare_identities(source, ledger, settings):
@@ -363,106 +358,67 @@ def _validate(ledger, destination):
     return counts
 
 
-def _report(path, header, ledger):
-    """Stream potentially large field/context sections instead of building lists."""
-    with path.open('x', encoding='utf-8') as stream:
-        path.chmod(0o600)
-        stream.write('{\n')
-        for key, value in header.items():
-            stream.write(dumps(key) + ':' + pretty_json(value) + ',\n')
-        for position, (key, rows) in enumerate([('fields', ledger.report_fields()), ('numeric_contexts', ledger.report_numbers())]):
-            stream.write(dumps(key) + ':[')
-            separator = '\n'
-            for row in rows:
-                stream.write(separator + pretty_json(row))
-                separator = ',\n'
-            stream.write(']' + (',\n' if position == 0 else '\n'))
-        stream.write('}\n')
-
-
-def perturb(cohort_db, field_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42):
+def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42):
     """Create perturbed source-derived records and return the report header.
 
-    Both input databases must be completed and match; neither is modified.
-    The field database verifies the profiled snapshot. Its frequencies do not
-    select replacement values: we edit original JSON from the ingestion index.
+    The ingestion database must be complete and is opened read-only. We edit
+    its original JSON directly and measure the resulting changes.
     The output must be new, and is usable only after its run status completes.
     """
-    settings = _settings(strength, date_shift_days, seed)
+    settings = validate_settings(strength, date_shift_days, seed)
     output = Path(output_dir).absolute()
     if output.exists() or output.is_symlink():
         raise PerturbationError('Output already exists; choose a new output directory.')
     types = TypeIndex()
-    with open_source(cohort_db) as (source, source_run, _):
+    with open_source(cohort_db) as (source, source_run):
         if source_run['fhir_version'] != '4.0.1':
             raise PerturbationError('Perturbation requires a FHIR R4 4.0.1 source index.')
-        with open_matching_fields(field_db, source, source_run):
-            fingerprint = source_fingerprint(source)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.mkdir(mode=0o700)
-            ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata)
-            db = ledger.db
-            try:
-                issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
-                db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
-                # 1. Allocate every target ID and one factor/day offset per patient.
-                _prepare(source, ledger, types, settings)
-                # 2. Write a private partial export and its field-by-field audit trail.
-                db.execute("UPDATE run SET phase='writing'")
-                db.commit()
-                partial = output / '.perturbed.ndjson.partial'
-                _write(source, ledger, types, settings, partial)
-                # 3. Reread what was actually written before reporting success.
-                db.execute("UPDATE run SET phase='validation'")
-                db.commit()
-                validation = _validate(ledger, partial)
-                # 4. Measure the actual changes, including changes lost to rounding.
-                db.execute("UPDATE run SET phase='aggregation'")
-                db.commit()
-                ledger.aggregate()
-                unsupported = db.execute("SELECT coalesce(sum(frequency),0) FROM field_actions WHERE action='unsupported'").fetchone()[0]
-                status = 'completed_with_warnings' if unsupported or source_run['status'] == 'completed_with_warnings' else 'completed'
-                header = {'schema_version': 1, 'status': status, 'data_classification': 'perturbed_source_derived_data',
-                          'privacy_guarantee': False, 'settings': settings, 'source_fingerprint': fingerprint,
-                          'datatype_definitions': types.metadata, 'source_issues': issues,
-                          'population': 'deduplicated_non_contained_roots_with_contained_subtrees',
-                          'resource_types': dict(db.execute('SELECT resource_type,count(*) FROM resource_mappings WHERE resource_id=root_id GROUP BY resource_type ORDER BY resource_type')),
-                          'counts': {'root_resources': validation['roots_checked'],
-                                     'contained_resources': db.execute('SELECT count(*) FROM resource_mappings WHERE resource_id<>root_id').fetchone()[0],
-                                     'patients': db.execute('SELECT count(*) FROM patient_parameters').fetchone()[0],
-                                     'field_actions': dict(db.execute('SELECT action,sum(frequency) FROM field_actions GROUP BY action'))},
-                          'validation': {**validation, 'preserved_content_and_structure_verified': True,
-                                         'consistently_resolved_reference_targets_verified': True,
-                                         'changed_dates_use_shared_offsets': True,
-                                         'changed_quantities_use_shared_factors': True},
-                          'limitations': ['No privacy or anonymization guarantee; output and mappings contain source-derived information.',
-                                          'Inline resources outside containment (such as Parameters.parameter.resource) are preserved without identity or patient transformations.',
-                                          'No full FHIR, hospital-profile or clinical dependency validation.',
-                                          'Unknown extensions/content and unresolved references may remain unchanged; identity/reference remapping takes precedence.',
-                                          'Shared or unassigned resources retain quantities/dates. Partial and invalid dates remain unchanged.',
-                                          'Temperatures, percentages, logarithmic or unknown units remain unchanged.',
-                                          'Narrative, attachments and non-identity text remain unchanged.',
-                                          'Rounding can reduce small changes or alter ratios; zero-relative change is undefined for zero baselines.']}
-                # 5. Publish both files before the final status becomes complete.
-                # A crash between renames still leaves an unusable in-progress run.
-                db.execute("UPDATE run SET phase='reporting'")
-                db.commit()
-                report_partial = output / '.perturbation-report.json.partial'
-                _report(report_partial, header, ledger)
-                partial.rename(output / 'perturbed.ndjson')
-                report_partial.rename(output / 'perturbation-report.json')
-                db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
-                db.commit()
-                db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-                db.execute('PRAGMA journal_mode=DELETE')
-                return header
-            except BaseException as error:
-                db.rollback()
-                state = 'interrupted' if isinstance(error, KeyboardInterrupt) else 'failed'
-                db.execute('UPDATE run SET status=?,failure_code=?', (state, state))
-                db.commit()
-                db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-                db.execute('PRAGMA journal_mode=DELETE')
-                raise
-            finally:
-                ledger.close()
+        fingerprint = source_fingerprint(source)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.mkdir(mode=0o700)
+        ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata)
+        db = ledger.db
+        try:
+            issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
+            db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
+            # 1. Allocate every target ID and one factor/day offset per patient.
+            _prepare_identities(source, ledger, settings)
+            _prepare_date_offsets(source, ledger, types, settings)
+            # 2. Write a private partial export and its field-by-field audit trail.
+            db.execute("UPDATE run SET phase='writing'")
+            db.commit()
+            partial = output / '.perturbed.ndjson.partial'
+            _write(source, ledger, types, settings, partial)
+            # 3. Reread what was actually written before reporting success.
+            db.execute("UPDATE run SET phase='validation'")
+            db.commit()
+            validation = _validate(ledger, partial)
+            # 4. Measure the actual changes, including changes lost to rounding.
+            db.execute("UPDATE run SET phase='aggregation'")
+            db.commit()
+            ledger.aggregate()
+            header = build_report(ledger, source_run['status'], validation)
+            status = header['status']
+            # 5. Publish both files before the final status becomes complete.
+            # A crash between renames still leaves an unusable in-progress run.
+            db.execute("UPDATE run SET phase='reporting'")
+            db.commit()
+            report_partial = output / '.perturbation-report.json.partial'
+            write_report(report_partial, header, ledger)
+            partial.rename(output / 'perturbed.ndjson')
+            report_partial.rename(output / 'perturbation-report.json')
+            db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
+            db.commit()
+            db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+            db.execute('PRAGMA journal_mode=DELETE')
+            return header
+        except BaseException as error:
+            db.rollback()
+            state = 'interrupted' if isinstance(error, KeyboardInterrupt) else 'failed'
+            db.execute('UPDATE run SET status=?,failure_code=?', (state, state))
+            db.commit()
+            db.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+            db.execute('PRAGMA journal_mode=DELETE')
+            raise
+        finally:
+            ledger.close()

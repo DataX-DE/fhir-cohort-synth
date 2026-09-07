@@ -31,7 +31,7 @@ class Field:
     a value without rebuilding or flattening its surrounding JSON.
 
     ``reason`` explains protected/unknown content and propagates to descendants.
-    ``quantity`` and ``quantity_path`` locate an enclosing measurement object.
+    ``quantity`` is the enclosing measurement object, when one exists.
     ``concept`` holds serialized ancestor coding contexts for numeric reports;
     it is captured before the writer can change any referenced identities.
     """
@@ -43,7 +43,6 @@ class Field:
     key: object
     reason: str | None
     quantity: dict | None
-    quantity_path: tuple | None
     concept: object
 
 
@@ -117,12 +116,12 @@ class TypeIndex:
         """
         root_type = resource.get('resourceType')
         # value, path, datatype, definition, schema anchor, parent type,
-        # parent, key, protected reason, enclosing quantity/path, clinical code
+        # parent, key, protected reason, enclosing quantity, clinical code
         stack = [(resource, (), root_type, root_type, root_type, None, None, None,
-                  None if root_type in self.definitions else 'unknown_resource_type', None, None, None)]
+                  None if root_type in self.definitions else 'unknown_resource_type', None, None)]
         while stack:
             (value, path, datatype, definition, anchor, parent_type,
-             parent, key, reason, quantity, quantity_path, concept) = stack.pop()
+             parent, key, reason, quantity, concept) = stack.pop()
             if isinstance(value, dict):
                 if datatype == 'Resource' and reason is None:
                     datatype = value.get('resourceType')
@@ -153,8 +152,8 @@ class TypeIndex:
                     # later in this traversal. Only ancestor context is held.
                     concept = (concept or ()) + ((normalized, dumps(context)),)
                 if datatype in {'Quantity', 'Distance'}:
-                    quantity, quantity_path = value, path
-            yield Field(path, value, datatype, parent_type, parent, key, reason, quantity, quantity_path, concept)
+                    quantity = value
+            yield Field(path, value, datatype, parent_type, parent, key, reason, quantity, concept)
             # Reverse pushes keep original object/array order when popping a
             # last-in-first-out stack. Array elements inherit their declared
             # datatype but keep separate parent/index slots; no combinations form.
@@ -169,8 +168,8 @@ class TypeIndex:
                     elif child_type is None:
                         child_reason = reason or 'unknown_field'
                     stack.append((child, path + (('key', child_key),), child_type, child_definition, child_anchor,
-                                  datatype, value, child_key, child_reason, quantity, quantity_path, concept))
+                                  datatype, value, child_key, child_reason, quantity, concept))
             elif isinstance(value, list):
                 for index in range(len(value) - 1, -1, -1):
                     stack.append((value[index], path + (('index', index),), datatype, definition, anchor, parent_type,
-                                  value, index, reason, quantity, quantity_path, concept))
+                                  value, index, reason, quantity, concept))

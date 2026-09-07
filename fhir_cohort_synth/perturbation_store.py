@@ -9,11 +9,10 @@ All original/replacement numeric tokens are TEXT, never SQLite REAL. Small
 in-memory counters combine repeated keys, then flush into exact database totals.
 """
 from collections import Counter
+from decimal import Decimal
 from functools import lru_cache
 import sqlite3
 
-from .field_statistics import compare_decimals, numeric_summary
-from .json_fields import display_path
 from .jsonio import dumps, loads
 from .perturbation_handlers import relative_change
 
@@ -57,16 +56,53 @@ CREATE TABLE source_issues (severity TEXT, code TEXT, frequency INTEGER);
 """
 
 
-def normalized(path):
-    """Group array positions under one field path without changing the actual tree."""
-    return tuple(('item', None) if kind == 'index' else (kind, key) for kind, key in path)
+QUANTILES = (("p05", 5), ("p25", 25), ("p50", 50), ("p75", 75), ("p95", 95))
+
+
+def compare_decimals(left, right):
+    """Order numeric JSON tokens without conversion to binary floating point."""
+    a, b = Decimal(left), Decimal(right)
+    return (a > b) - (a < b)
+
+
+def numeric_summary(rows, count):
+    """Summarize weighted numeric frequencies for the perturbation report.
+
+    rows must stream (token, frequency) in Decimal order with a binary token
+    tie-break. Frequency weights are observations, not distinct-value weights.
+    """
+    # Integer ceiling avoids floating-point rank errors. For n=4 and p50,
+    # the rank is 2; cumulative frequency, not distinct-token position, finds it.
+    ranks = [(name, (percent * count + 99) // 100) for name, percent in QUANTILES]
+    cumulative, next_rank = 0, 0
+    minimum, maximum, quantiles = None, None, {}
+    for token, frequency in rows:
+        if minimum is None:
+            minimum = token
+        maximum = token
+        cumulative += frequency
+        while next_rank < len(ranks) and cumulative >= ranks[next_rank][1]:
+            quantiles[ranks[next_rank][0]] = loads(token)
+            next_rank += 1
+    return minimum, maximum, quantiles
+
+
+def display_path(path) -> str:
+    """Render paths for people; database keys use serialized typed segments."""
+    result = "$"
+    for kind, value in path:
+        if kind == "key":
+            result += "[" + dumps(value) + "]"
+        else:
+            result += "[*]" if kind == "item" else f"[{value}]"
+    return result
 
 
 @lru_cache(maxsize=16384)
 def normalized_path(path):
     # Repeated measurements revisit the same paths millions of times. Cache
     # only bounded path metadata, never a cohort's distinct source values.
-    segments = normalized(path)
+    segments = tuple(('item', None) if kind == 'index' else (kind, key) for kind, key in path)
     return segments, dumps(segments)
 
 

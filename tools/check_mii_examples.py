@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fhir_cohort_synth.ingest import ingest
 from fhir_cohort_synth.jsonio import loads
 from fhir_cohort_synth.perturbation import perturb
-from fhir_cohort_synth.profiling import profile_index
 from tools.check_r4_examples import issue_key, outcome_files, write_json
 
 PACKAGES = {'base': '2026.0.0', 'laborbefund': '2026.0.3', 'medikation': '2026.0.1',
@@ -131,7 +130,7 @@ def run(packages, output):
                                      'code': 'invented-support', 'display': 'Invented test Patient'}]}})
             write_json(output / 'coverage.json', report)
             try:
-                # 2. Use the same three APIs as the hospital CLI. This harness
+                # 2. Use the same ingestion and perturbation APIs as the hospital CLI. This harness
                 # supplies fixtures and records results; it does not repair data.
                 ingested = ingest([inputs], directory / 'ingested')
                 case['ingestion_status'] = ingested['status']
@@ -140,9 +139,7 @@ def run(packages, output):
                     case['status'] = 'ingestion_rejected'
                 else:
                     cohort = directory / 'ingested/cohort.sqlite'
-                    profile_index(cohort, directory / 'profile')
-                    result = perturb(cohort, directory / 'profile/field-occurrences.sqlite',
-                                     directory / 'perturbed', seed=42)
+                    result = perturb(cohort, directory / 'perturbed', seed=42)
                     case.update(status='completed', counts=result['counts'], validation=result['validation'])
                     for side in ('before', 'after'):
                         (directory / side).mkdir(mode=0o700)

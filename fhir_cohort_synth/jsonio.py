@@ -48,3 +48,15 @@ def dumps(value):
         # Array order is part of the data and must remain unchanged.
         return "[" + ",".join(dumps(v) for v in value) + "]"
     return json.dumps(value, ensure_ascii=False, allow_nan=False)
+
+
+def pretty_json(value, level=0):
+    """Indent report values without converting Decimal tokens to floating point."""
+    """Indent a report fragment while preserving Decimal tokens as JSON numbers."""
+    if isinstance(value, dict) and value:
+        parts = ["  " * (level + 1) + dumps(key) + ": " + pretty_json(child, level + 1)
+                 for key, child in value.items()]
+        return "{\n" + ",\n".join(parts) + "\n" + "  " * level + "}"
+    if isinstance(value, list) and value:
+        return "[\n" + ",\n".join("  " * (level + 1) + pretty_json(child, level + 1) for child in value) + "\n" + "  " * level + "]"
+    return dumps(value)

@@ -23,7 +23,6 @@ from fhir_cohort_synth.fhir_types import TypeIndex
 from fhir_cohort_synth.ingest import ingest
 from fhir_cohort_synth.jsonio import dumps, loads
 from fhir_cohort_synth.perturbation import perturb
-from fhir_cohort_synth.profiling import profile_index
 
 
 def supplemental_examples():
@@ -151,8 +150,7 @@ def run(package, extra_zip, output):
                 case['status'] = 'ingestion_rejected'
             else:
                 cohort = case_dir / 'ingested/cohort.sqlite'
-                profile_index(cohort, case_dir / 'profile')
-                result = perturb(cohort, case_dir / 'profile/field-occurrences.sqlite', case_dir / 'perturbed', seed=7)
+                result = perturb(cohort, case_dir / 'perturbed', seed=7)
                 case['status'] = 'completed'
                 case['counts'] = result['counts']
                 case['validation'] = result['validation']

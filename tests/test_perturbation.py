@@ -20,7 +20,8 @@ from fhir_cohort_synth.jsonio import dumps, loads
 from fhir_cohort_synth.perturbation import perturb
 from fhir_cohort_synth import perturbation as engine
 from fhir_cohort_synth.perturbation_handlers import full_date, scale, shift_date
-from fhir_cohort_synth.profiling import profile_index
+from fhir_cohort_synth.cohort import open_source
+from fhir_cohort_synth.perturbation_store import compare_decimals, numeric_summary
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -42,6 +43,20 @@ def observation(identity, value, **fields):
 
 
 class HandlerTests(unittest.TestCase):
+    def test_numeric_report_quantiles_use_decimal_order_and_occurrence_weights(self):
+        # 10E-1 is smaller than 1.000...001; float coercion would lose that
+        # distinction. Three copies of the latter also determine the median.
+        precise = '1.00000000000000000001'
+        with closing(sqlite3.connect(':memory:')) as db:
+            db.create_collation('DECIMAL', compare_decimals)
+            db.execute('CREATE TABLE samples (value TEXT, frequency INTEGER)')
+            db.executemany('INSERT INTO samples VALUES (?,?)', [(precise, 3), ('2', 2), ('10', 1), ('10E-1', 1)])
+            rows = db.execute('SELECT value,frequency FROM samples ORDER BY value COLLATE DECIMAL,value')
+            low, high, quantiles = numeric_summary(rows, 7)
+        self.assertEqual((low, high), ('10E-1', '10'))
+        self.assertEqual(quantiles, {'p05': Decimal('1'), 'p25': Decimal(precise),
+                                    'p50': Decimal(precise), 'p75': 2, 'p95': 10})
+
     def test_decimal_quantum_half_even_and_large_precision(self):
         self.assertEqual(scale(5, Decimal('1.1')), 6)
         self.assertEqual(scale(15, Decimal('1.1')), 16)
@@ -83,7 +98,6 @@ class PerturbationTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.cohort = self.root / 'input/cohort.sqlite'
-        self.fields = self.root / 'fields/field-occurrences.sqlite'
         self.output = self.root / 'output'
 
     def prepare(self, resources):
@@ -91,10 +105,9 @@ class PerturbationTests(unittest.TestCase):
         path.write_text('\n'.join(dumps(r) for r in resources) + '\n')
         report = ingest([path], self.cohort.parent)
         self.assertNotEqual(report['status'], 'incomplete')
-        profile_index(self.cohort, self.fields.parent)
 
     def run_engine(self, **kwargs):
-        self.header = perturb(self.cohort, self.fields, self.output, **kwargs)
+        self.header = perturb(self.cohort, self.output, **kwargs)
         self.records = [loads(line) for line in (self.output/'perturbed.ndjson').read_text().splitlines()]
         self.db = sqlite3.connect(self.output/'perturbation-state.sqlite')
         self.db.row_factory = sqlite3.Row
@@ -424,12 +437,12 @@ class PerturbationTests(unittest.TestCase):
 
     def test_deterministic_inputs_unchanged_and_private_outputs(self):
         self.prepare([resource('Patient', 'p', birthDate='1980-01-01'), observation('o', Decimal('10.000'))])
-        before = [hashlib.sha256(p.read_bytes()).hexdigest() for p in (self.cohort, self.fields)]
+        before = hashlib.sha256(self.cohort.read_bytes()).hexdigest()
         self.run_engine()
         second = self.root/'second'
-        perturb(self.cohort, self.fields, second)
+        perturb(self.cohort, second)
         self.assertEqual((self.output/'perturbed.ndjson').read_bytes(), (second/'perturbed.ndjson').read_bytes())
-        self.assertEqual(before, [hashlib.sha256(p.read_bytes()).hexdigest() for p in (self.cohort, self.fields)])
+        self.assertEqual(before, hashlib.sha256(self.cohort.read_bytes()).hexdigest())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
         for name in ('perturbed.ndjson', 'perturbation-state.sqlite', 'perturbation-report.json'):
             self.assertEqual((self.output/name).stat().st_mode & 0o777, 0o600)
@@ -443,63 +456,87 @@ class PerturbationTests(unittest.TestCase):
         self.assertNotEqual(result[0]['id'], p['id'])
         self.assertEqual(result[1]['valueQuantity']['value'], Decimal('10.000'))
 
-    def test_copied_matching_databases_are_accepted_without_modification(self):
+    def test_copied_source_is_accepted_without_modification(self):
         self.prepare([resource('Patient', 'p'), observation('o', Decimal('10.000'))])
-        copied_cohort, copied_fields = self.root/'copied-cohort.sqlite', self.root/'copied-fields.sqlite'
-        for original, copied in ((self.cohort, copied_cohort), (self.fields, copied_fields)):
-            shutil.copyfile(original, copied)
-        before = [hashlib.sha256(p.read_bytes()).hexdigest() for p in (copied_cohort, copied_fields)]
-        report = perturb(copied_cohort, copied_fields, self.output)
+        copied = self.root/'copied-cohort.sqlite'
+        shutil.copyfile(self.cohort, copied)
+        before = hashlib.sha256(copied.read_bytes()).hexdigest()
+        report = perturb(copied, self.output)
         self.assertEqual(report['counts']['root_resources'], 2)
-        self.assertEqual(before, [hashlib.sha256(p.read_bytes()).hexdigest() for p in (copied_cohort, copied_fields)])
+        self.assertEqual(before, hashlib.sha256(copied.read_bytes()).hexdigest())
 
-    def test_occurrence_context_mismatch_is_rejected_before_output(self):
+    def test_missing_reference_graph_is_rejected_before_output(self):
         self.prepare([resource('Patient', 'p')])
-        with closing(sqlite3.connect(self.fields)) as db, db:
-            db.execute("UPDATE source_occurrences SET context='different'")
-        with self.assertRaisesRegex(InputError, 'do not match'):
-            perturb(self.cohort, self.fields, self.output)
+        with closing(sqlite3.connect(self.cohort)) as db, db:
+            db.execute('DROP TABLE resource_references')
+        with self.assertRaises(InputError):
+            perturb(self.cohort, self.output)
         self.assertFalse(self.output.exists())
 
-    def test_no_overwrite_invalid_parameters_and_mismatched_inputs(self):
+    def test_source_connection_rejects_writes(self):
+        self.prepare([resource('Patient', 'p')])
+        before = self.cohort.read_bytes()
+        with open_source(self.cohort) as (db, run):
+            self.assertEqual(run['schema_version'], 1)
+            with self.assertRaises(sqlite3.OperationalError):
+                db.execute("UPDATE run SET status='in_progress'")
+        self.assertEqual(self.cohort.read_bytes(), before)
+
+    def test_missing_corrupt_and_symlinked_source_indexes_are_rejected(self):
+        missing = self.root / 'missing.sqlite'
+        corrupt = self.root / 'corrupt.sqlite'
+        corrupt.write_bytes(b'not a database')
+        self.prepare([resource('Patient', 'p')])
+        alias = self.root / 'alias.sqlite'
+        alias.symlink_to(self.cohort)
+        for source in (missing, corrupt, alias):
+            with self.subTest(source=source.name), self.assertRaises(InputError):
+                perturb(source, self.output)
+            self.assertFalse(self.output.exists())
+
+    def test_source_errors_and_empty_population_override_a_completed_status(self):
+        self.prepare([resource('Patient', 'p')])
+        for query in ("UPDATE issues SET severity='error'", 'DELETE FROM resources'):
+            copied = self.root / 'invalid.sqlite'
+            shutil.copyfile(self.cohort, copied)
+            with closing(sqlite3.connect(copied)) as db, db:
+                db.execute(query)
+            with self.assertRaises(InputError):
+                perturb(copied, self.output)
+            self.assertFalse(self.output.exists())
+
+    def test_no_overwrite_and_invalid_parameters(self):
         self.prepare([resource('Patient', 'p')])
         for kwargs in ({'strength': 'NaN'}, {'strength': 1}, {'strength': -1}, {'strength': True},
                        {'date_shift_days': -1}, {'date_shift_days': True}, {'seed': 1.5}):
             with self.assertRaises(InputError):
-                perturb(self.cohort, self.fields, self.output, **kwargs)
-        self.assertFalse(self.output.exists())
-        with closing(sqlite3.connect(self.fields)) as db, db:
-            db.execute("UPDATE source_resources SET digest='incorrect'")
-        with self.assertRaises(InputError):
-            perturb(self.cohort, self.fields, self.output)
+                perturb(self.cohort, self.output, **kwargs)
         self.assertFalse(self.output.exists())
         self.output.mkdir()
         with self.assertRaises(InputError):
-            perturb(self.cohort, self.fields, self.output)
+            perturb(self.cohort, self.output)
 
     def test_incomplete_and_unsupported_indexes_rejected(self):
         self.prepare([resource('Patient', 'p')])
-        with closing(sqlite3.connect(self.fields)) as db, db:
-            db.execute("UPDATE run SET status='in_progress'")
-        with self.assertRaises(InputError):
-            perturb(self.cohort, self.fields, self.output)
-        with closing(sqlite3.connect(self.fields)) as db, db:
-            db.execute("UPDATE run SET status='completed_with_warnings',schema_version=99")
-        with self.assertRaises(InputError):
-            perturb(self.cohort, self.fields, self.output)
-        self.assertFalse(self.output.exists())
+        for status, version, fhir in [('in_progress', 1, '4.0.1'), ('completed_with_warnings', 99, '4.0.1'),
+                                      ('completed_with_warnings', 1, '5.0.0')]:
+            with closing(sqlite3.connect(self.cohort)) as db, db:
+                db.execute('UPDATE run SET status=?,schema_version=?,fhir_version=?', (status, version, fhir))
+            with self.assertRaises(InputError):
+                perturb(self.cohort, self.output)
+            self.assertFalse(self.output.exists())
 
     def test_interrupted_and_report_failure_never_complete(self):
         self.prepare([resource('Patient', 'p')])
-        for method, exception in [('_write', KeyboardInterrupt()), ('_report', OSError('private-value'))]:
+        for method, exception in [('_write', KeyboardInterrupt()), ('write_report', OSError('private-value'))]:
             output = self.root/method
             with patch.object(engine, method, side_effect=exception):
                 with self.assertRaises(type(exception)):
-                    perturb(self.cohort, self.fields, output)
+                    perturb(self.cohort, output)
             with closing(sqlite3.connect(output/'perturbation-state.sqlite')) as db, db:
                 self.assertIn(db.execute('SELECT status FROM run').fetchone()[0], ['failed', 'interrupted'])
             with self.assertRaises(InputError):
-                perturb(self.cohort, self.fields, output)
+                perturb(self.cohort, output)
 
     def test_validation_detects_unrecorded_content_change(self):
         self.prepare([resource('Patient', 'p', gender='female')])
@@ -510,11 +547,11 @@ class PerturbationTests(unittest.TestCase):
             path.write_text(path.read_text().replace('female', 'male'))
         with patch.object(engine, '_write', side_effect=corrupt):
             with self.assertRaisesRegex(InputError, 'Unrecorded'):
-                perturb(self.cohort, self.fields, self.output)
+                perturb(self.cohort, self.output)
 
     def test_cli_and_private_errors(self):
         self.prepare([resource('Patient', 'p')])
-        args = ['perturb', '--input', str(self.cohort), '--fields', str(self.fields), '--output', str(self.output)]
+        args = ['perturb', '--input', str(self.cohort), '--output', str(self.output)]
         with redirect_stdout(io.StringIO()) as output:
             self.assertEqual(main(args), 0)
         self.assertIn('perturbed source-derived data', output.getvalue())
@@ -525,7 +562,6 @@ class PerturbationTests(unittest.TestCase):
 
     def test_invented_example_end_to_end_and_reingestion(self):
         ingest([REPO/'examples/mii-demo-bundle.json'], self.cohort.parent)
-        profile_index(self.cohort, self.fields.parent)
         self.run_engine()
         self.assertEqual(self.header['counts']['root_resources'], 23)
         report = ingest([self.output/'perturbed.ndjson'], self.root/'reingestion')
