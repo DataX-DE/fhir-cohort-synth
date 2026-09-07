@@ -31,8 +31,10 @@ inventories, hospital-scope classification and archived Bundle metadata.
 Reference contexts and source resource JSON remain. Perturbation accepts both
 schema 1 and schema 2 ingestion indexes. Perturbation state schema 3 stores a
 32-byte key and `hmac-sha256-v1` algorithm identifier. New runs generate fresh keys;
-`--reuse-key-from` reproduces a compatible completed run. The public seed option
-is removed. Earlier outputs remain records of their original runs; no migration
+The Python `reuse_key_from` argument reproduces a compatible completed run.
+CLI commands accept only input/output paths and use fixed defaults; advanced
+configuration remains in the Python API. The public seed option is removed.
+Earlier outputs remain records of their original runs; no migration
 is performed. Coverage report schema 2 excludes keys and numeric summaries.
 
 ## Deliberate first-version limits

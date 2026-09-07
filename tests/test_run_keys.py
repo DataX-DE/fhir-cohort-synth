@@ -224,13 +224,14 @@ class RunKeyTests(unittest.TestCase):
                     self.run_export(change, date_shift_days=0)
             self.assertEqual(self.state(self.root / change)['status'], 'failed')
 
-    def test_run_cli_reproduces_and_invalid_reuse_keeps_failed_workflow_status(self):
+    def test_run_cli_defaults_and_api_reuse_with_failed_workflow_status(self):
         first = self.root / 'full'
-        run_export([self.source], first)
-        second = self.root / 'full-replay'
         with redirect_stdout(io.StringIO()):
-            self.assertEqual(main(['run', '--input', str(self.source), '--output', str(second),
-                                   '--reuse-key-from', str(first / 'perturbed/perturbation-state.sqlite')]), 0)
+            self.assertEqual(main(['run', '--input', str(self.source), '--output', str(first)]), 0)
+        settings = loads(self.state(first / 'perturbed')['settings_json'])
+        self.assertEqual(settings, {'strength': Decimal('.16'), 'date_shift_days': 30})
+        second = self.root / 'full-replay'
+        run_export([self.source], second, reuse_key_from=first / 'perturbed/perturbation-state.sqlite')
         self.assertEqual((first / 'perturbed/fhir/source.ndjson').read_bytes(),
                          (second / 'perturbed/fhir/source.ndjson').read_bytes())
         failed = self.root / 'full-failed'

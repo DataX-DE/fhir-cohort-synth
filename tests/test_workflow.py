@@ -33,8 +33,7 @@ class WorkflowTests(unittest.TestCase):
 
     def test_one_command_matches_manual_stages(self):
         before = hashlib.sha256(EXAMPLE.read_bytes()).hexdigest()
-        args = ['run', '--input', str(EXAMPLE), '--output', str(self.output),
-                '--strength', '0.03', '--date-shift-days', '7']
+        args = ['run', '--input', str(EXAMPLE), '--output', str(self.output)]
         with redirect_stdout(io.StringIO()):
             self.assertEqual(main(args), 0)
         self.assertEqual(self.status()['phase'], 'complete')
@@ -43,7 +42,6 @@ class WorkflowTests(unittest.TestCase):
 
         ingest([EXAMPLE], self.root / 'manual-index')
         perturb(self.root / 'manual-index/cohort.sqlite', self.root / 'manual-output',
-                strength='0.03', date_shift_days=7,
                 reuse_key_from=self.output / 'perturbed/perturbation-state.sqlite')
         for name in ('fhir/mii-demo-bundle.ndjson', 'perturbation-report.json'):
             self.assertEqual((self.output / 'perturbed' / name).read_bytes(),
@@ -63,10 +61,8 @@ class WorkflowTests(unittest.TestCase):
             stream.write(dumps(observation) + '\n' + dumps(observation) + '\n')
         patient_file = inputs / 'b.json'
         patient_file.write_text(dumps(patient))
-        args = ['run', '--input', str(inputs), str(patient_file), '--output', str(self.output),
-                '--base-url', 'https://example.invalid/fhir']
-        with redirect_stdout(io.StringIO()):
-            self.assertEqual(main(args), 0)
+        # An explicit server namespace is an advanced Python API setting.
+        run_export([inputs, patient_file], self.output, base_url='https://example.invalid/fhir')
         result = loads((self.output / 'perturbed/perturbation-report.json').read_text())
         self.assertEqual(result['counts']['root_resources'], 2)
         self.assertEqual(result['validation']['references_checked'], 1)

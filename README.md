@@ -57,15 +57,12 @@ Deduplicated roots stay in their first source file. The report's `export` sectio
 lists every output file, record count and checksum of its decompressed content.
 
 Defaults are **an independent 1–16% increase or decrease per eligible quantity,
-±30 days per patient and a fresh secret key per run**. To change the upper percentage bound:
-
-```sh
-python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output \
-  --strength 0.16 --date-shift-days 30
-```
+±30 days per patient and a fresh secret key per run**. The CLI accepts only
+`--input` and `--output`, plus standard help/version options. Custom settings
+are available through the Python API for development.
 
 Each quantity occurrence draws its own magnitude and a 50/50 sign; repeated
-measurements and components vary independently. `--strength` sets the maximum
+measurements and components vary independently. The Python `strength` argument sets the maximum
 fractional change, with a fixed 1% minimum; `0` disables numeric changes.
 Each patient still shares one date offset. A fresh 32-byte key controls all
 generated identities, names, identifiers, numeric draws and date offsets. It is
@@ -86,19 +83,23 @@ python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output lo
 
 The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None)`.
 The ingestion database must be completed, supported and readable.
-To reproduce a previous export locally, supply its state database and the same
+To reproduce a previous export locally through Python, supply its state database and the same
 input snapshot and numeric/date settings, using a new output directory:
 
-```sh
-python3 fhir_synth.py perturb \
-  --input local-data/index/cohort.sqlite --output local-data/reproduced \
-  --reuse-key-from local-data/perturbed/perturbation-state.sqlite
+```python
+from fhir_cohort_synth.perturbation import perturb
+
+perturb(
+    "local-data/index/cohort.sqlite",
+    "local-data/reproduced",
+    reuse_key_from="local-data/perturbed/perturbation-state.sqlite",
+)
 ```
 
-`run` also accepts `--reuse-key-from`. The previous run must be complete and
-use the same datatype definitions and algorithm. Supply any nondefault strength
-and date range again. Without this option, every run gets a fresh key.
-The public `seed` argument and `--seed` option have been removed; older keyless
+`workflow.run_export()` also accepts `reuse_key_from`. The previous run must be
+complete and use the same datatype definitions and algorithm. Supply any
+nondefault strength and date range again. Without key reuse, every run gets a fresh key.
+The public `seed` argument has been removed; older keyless
 output databases cannot be used for reproduction. The earlier `field_db` argument
 and CLI `--fields` option are also removed.
 
@@ -201,11 +202,15 @@ Supply exports from one coherent identity namespace per run when full URLs
 are absent: the tool cannot recover missing server identities.
 
 If an export from **one known server** contains absolute references but omits
-entry full URLs, supply that server's base explicitly:
+entry full URLs, supply that server's base through the Python API:
 
-```sh
-python3 fhir_synth.py run --input /path/to/export --output /path/to/new-output \
-  --base-url https://example.invalid/fhir
+```python
+from fhir_cohort_synth.workflow import run_export
+
+run_export(
+    ["/path/to/export"], "/path/to/new-output",
+    base_url="https://example.invalid/fhir",
+)
 ```
 
 This supplies identities for non-contained resources lacking `fullUrl` and
@@ -247,8 +252,8 @@ the hospital's exact profile packages, pinned and bundled for offline use.
   local diagnosis, but the index is not ready for perturbation.
 
 Exit code is `0` for completion (including warnings), `2` for errors or invalid
-arguments, and `130` for an interrupted command. Add `--strict` to also return
-`2` for warnings. A zero exit code is
+arguments, and `130` for an interrupted command. Warnings remain in the reports.
+A zero exit code is
 not a privacy guarantee, proof of export completeness or profile conformance.
 History Bundles and entries without resources are reported as unsupported
 snapshot inputs. Bundle envelopes and request/response/search metadata remain

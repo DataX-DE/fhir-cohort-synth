@@ -55,7 +55,7 @@ Consider this invented resource together with its referenced `Patient/p1`:
    the Patient target. `Store.group_patients()` assigns this Observation to it.
    This separate pass allows the Patient to appear later in the export.
 3. **Prepare changes.** Generate a fresh secret key, or read a compatible completed
-   run with `--reuse-key-from`. Commit that key to local state.
+   run using the Python `reuse_key_from` argument. Commit that key to local state.
    `_prepare_identities()` allocates replacement IDs for
    every target. `_prepare_date_offsets()` checks all
    supported dates before choosing a shared offset that fits calendar bounds.

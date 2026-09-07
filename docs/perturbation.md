@@ -11,8 +11,7 @@ outputs stay local; the result has no privacy or anonymization guarantee.
 ```sh
 python3 fhir_synth.py run \
   --input examples/mii-demo-bundle.json \
-  --output local-data/demo \
-  --strength 0.16 --date-shift-days 30
+  --output local-data/demo
 ```
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
@@ -20,7 +19,9 @@ module suffice. There are no runtime downloads or third-party dependencies.
 The export files are in `local-data/demo/perturbed/fhir/`. Original indexed data
 and ingestion reports are in `local-data/demo/index/`. The overall `run.json`
 records completion only after ingestion, perturbation and output checks finish.
-The engine uses the ingestion reference graph directly.
+The engine uses the ingestion reference graph directly. CLI commands accept only
+input/output paths and use the defaults: 1–16% quantity changes, ±30-day patient
+date shifts and a fresh secret key. Advanced options are Python API arguments.
 
 To reuse an existing index without ingesting the files again:
 
@@ -47,24 +48,25 @@ disabled. The same key, input snapshot, settings and implementation reproduce
 the same FHIR files. Reordering/re-ingesting an export can change its snapshot
 identities, so reproduction requires the same indexed snapshot.
 
-To reuse a key locally, point to a completed run's state database:
+To reuse a key locally through Python, point to a completed run's state database:
 
-```sh
-python3 fhir_synth.py perturb \
-  --input local-data/demo/index/cohort.sqlite \
-  --output local-data/reproduced \
-  --reuse-key-from local-data/demo/perturbed/perturbation-state.sqlite
+```python
+perturb(
+    "local-data/demo/index/cohort.sqlite",
+    "local-data/reproduced",
+    reuse_key_from="local-data/demo/perturbed/perturbation-state.sqlite",
+)
 ```
 
-Both `perturb()` and `workflow.run_export()` accept `reuse_key_from=None`; both
-CLI commands accept `--reuse-key-from`. Supply the same nondefault strength and
+Both `perturb()` and `workflow.run_export()` accept `reuse_key_from=None`.
+Supply the same nondefault strength and
 date range again when applicable. The reader opens the previous database read-only
 and checks completion, state schema 3, algorithm, key length, source fingerprint,
 datatype definitions and settings before creating the perturbation output.
 If this check fails during `run`, the completed ingestion index remains with
 an overall failed status. There is no fallback to a fresh key or public seed.
 Older keyless output databases are not migrated and cannot supply a key.
-The `seed` argument and `--seed` option have been removed.
+The `seed` argument has been removed. Key reuse is available only through the Python API.
 
 Each eligible quantity occurrence independently draws a magnitude uniformly
 between 1% and `strength` (default 16%), and an increase/decrease with equal

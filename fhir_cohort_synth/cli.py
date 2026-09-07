@@ -17,11 +17,10 @@ from .workflow import run_export
 def perturb_command(args):
     """Run the export workflow or an already indexed cohort with the same options."""
     operation = run_export if args.command == 'run' else perturb
-    options = {'strength': args.strength, 'date_shift_days': args.date_shift_days, 'reuse_key_from': args.reuse_key_from}
-    if args.command == 'run':
-        options['base_url'] = args.base_url
     try:
-        report = operation(args.input, args.output, **options)
+        # Hospital runs use the API defaults. Advanced configuration remains
+        # available to Python callers, without a second set of CLI defaults.
+        report = operation(args.input, args.output)
     except InputError as error:
         print(f"Cannot perturb: {error}", file=sys.stderr)
         return 2
@@ -48,7 +47,7 @@ def main(argv=None):
 
     ``argv=None`` reads the real command line; tests can supply an argument
     list directly. The launchers convert the returned code to SystemExit.
-    Ingestion warnings cause failure only with --strict. Perturbation accepts
+    Completed runs with warnings return success. Perturbation accepts
     completed source indexes with warnings and includes their issue context.
     """
     parser = argparse.ArgumentParser(description="Local FHIR ingestion and source-derived perturbation.")
@@ -57,25 +56,17 @@ def main(argv=None):
     run = commands.add_parser("run", help="Create a perturbed export directly from local FHIR files.")
     run.add_argument("--input", nargs="+", required=True, help="Files or directories: JSON, NDJSON, JSONL, optionally .gz.")
     run.add_argument("--output", required=True, help="New directory outside the input directories.")
-    run.add_argument("--base-url", help="Optional server base for entries without fullUrl; no network request is made.")
     command = commands.add_parser("ingest", help="Index a local FHIR R4 export and report its structure.")
     command.add_argument("--input", nargs="+", required=True, help="Files or directories: JSON, NDJSON, JSONL, optionally .gz.")
     command.add_argument("--output", required=True, help="New directory outside the input directories.")
-    command.add_argument("--base-url", help="Optional single server base for entries without fullUrl; no network request is made.")
-    command.add_argument("--strict", action="store_true", help="Exit with code 2 when warnings remain, as well as on errors.")
     command = commands.add_parser("perturb", help="Perturb supported values while retaining existing linked records.")
     command.add_argument("--input", required=True, help="Completed ingestion database (cohort.sqlite).")
     command.add_argument("--output", required=True, help="New output directory.")
-    # Both entry points call the same perturbation engine and share its defaults.
-    for subcommand in (run, command):
-        subcommand.add_argument("--strength", default="0.16", help="Maximum independent +/- quantity change, in [0.01,1); minimum 0.01, default maximum 0.16. Use 0 to disable.")
-        subcommand.add_argument("--date-shift-days", type=int, default=30, help="Maximum absolute patient date offset; default 30 days.")
-        subcommand.add_argument("--reuse-key-from", help="Previous local perturbation-state.sqlite for reproduction; requires matching input and settings. Default: fresh secret key.")
     args = parser.parse_args(argv)
     if args.command in {"run", "perturb"}:
         return perturb_command(args)
     try:
-        report = ingest(args.input, args.output, base_url=args.base_url)
+        report = ingest(args.input, args.output)
     except InputError as error:
         # InputError messages are deliberately written without source values.
         print(f"Cannot ingest: {error}", file=sys.stderr)
@@ -92,6 +83,4 @@ def main(argv=None):
           f"{report['counts']['unique_resources']} resources; {report['counts']['patients']} patient resources.")
     print("Created cohort.sqlite, report.json and report.txt in the output directory.")
     print("The database contains source patient data. Record perturbation and full profile validation have not run.")
-    # --strict changes the process exit code, not the recorded data findings.
-    warnings = any(i["severity"] == "warning" for i in report["issues"])
-    return 2 if report["status"] == "incomplete" or (args.strict and warnings) else 0
+    return 2 if report["status"] == "incomplete" else 0
