@@ -34,7 +34,10 @@ new-output/
     report.json
     report.txt
   perturbed/
-    perturbed.ndjson                # The output export
+    fhir/                          # Files named and grouped like the input
+      MimicPatient.ndjson.gz       # Example input filenames
+      MimicObservationED.ndjson.gz
+      ...
     perturbation-state.sqlite      # Identity maps, parameters and recorded edits
     perturbation-report.json       # Coverage and actual before/after changes
 ```
@@ -43,6 +46,15 @@ new-output/
 and reporting. Warnings are carried into the reports. An ingestion error stops
 the workflow before perturbation; a failure or interruption requires a new
 output directory. All outputs, including the original-data index, stay local.
+
+The export preserves NDJSON/JSONL filenames, gzip compression and directories
+relative to the source files' common parent. Records remain in source order.
+For the MIMIC demo, the 30 input `.ndjson.gz` files produce 30 matching files
+under `perturbed/fhir/`, including separate Observation exports.
+Single-resource JSON files remain JSON. Bundle inputs are unpacked by ingestion
+and use one `.ndjson` file per source Bundle; their envelopes are not rebuilt.
+Deduplicated roots stay in their first source file. The report's `export` section
+lists every output file, record count and checksum of its decompressed content.
 
 Defaults are **±2% quantity scaling, ±30 days and seed 42**. To change them:
 
@@ -258,6 +270,7 @@ For perturbation, start at `perturb()` in
 [`perturbation.py`](fhir_cohort_synth/perturbation.py). Datatype traversal lives in
 `fhir_types.py`, scalar transformations in `perturbation_handlers.py`, and the
 SQLite audit trail and distribution summaries in `perturbation_store.py`.
+`export_files.py` restores source file boundaries and verifies compressed output.
 `perturbation_report.py` builds the report; `cohort.py` owns shared read-only
 source checks.
 

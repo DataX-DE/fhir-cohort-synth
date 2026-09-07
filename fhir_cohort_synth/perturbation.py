@@ -16,6 +16,7 @@ from itertools import zip_longest
 from pathlib import Path
 
 from .fhir_types import TypeIndex
+from .export_files import plan_files, write_source_files
 from .ingest import InputError
 from .cohort import open_source, source_fingerprint
 from .jsonio import dumps, loads
@@ -374,6 +375,7 @@ def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42
         if source_run['fhir_version'] != '4.0.1':
             raise PerturbationError('Perturbation requires a FHIR R4 4.0.1 source index.')
         fingerprint = source_fingerprint(source)
+        files = plan_files(source)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.mkdir(mode=0o700)
         ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata)
@@ -393,11 +395,18 @@ def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42
             db.execute("UPDATE run SET phase='validation'")
             db.commit()
             validation = _validate(ledger, partial)
+            # Restore file boundaries only after every transformed root passes.
+            # The packager rereads each final file and checks its exact bytes.
+            db.execute("UPDATE run SET phase='exporting'")
+            db.commit()
+            export_partial = output / '.fhir.partial'
+            exported = write_source_files(source, partial, export_partial, files)
             # 4. Measure the actual changes, including changes lost to rounding.
             db.execute("UPDATE run SET phase='aggregation'")
             db.commit()
             ledger.aggregate()
             header = build_report(ledger, source_run['status'], validation)
+            header['export'] = exported
             status = header['status']
             # 5. Publish both files before the final status becomes complete.
             # A crash between renames still leaves an unusable in-progress run.
@@ -405,8 +414,9 @@ def perturb(cohort_db, output_dir, *, strength=0.02, date_shift_days=30, seed=42
             db.commit()
             report_partial = output / '.perturbation-report.json.partial'
             write_report(report_partial, header, ledger)
-            partial.rename(output / 'perturbed.ndjson')
+            export_partial.rename(output / 'fhir')
             report_partial.rename(output / 'perturbation-report.json')
+            partial.unlink()
             db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
             db.commit()
             db.execute('PRAGMA wal_checkpoint(TRUNCATE)')

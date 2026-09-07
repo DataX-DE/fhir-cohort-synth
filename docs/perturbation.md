@@ -17,7 +17,7 @@ python3 fhir_synth.py run \
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
 module suffice. There are no runtime downloads or third-party dependencies.
-The export is `local-data/demo/perturbed/perturbed.ndjson`. Original indexed data
+The export files are in `local-data/demo/perturbed/fhir/`. Original indexed data
 and ingestion reports are in `local-data/demo/index/`. The overall `run.json`
 records completion only after ingestion, perturbation and output checks finish.
 The engine uses the ingestion reference graph directly.
@@ -146,15 +146,19 @@ exactly as supplied.
 
 ## Outputs and validation
 
-- `perturbed.ndjson`: one line per deduplicated resource root, with contained
-  resources nested once. Bundle envelopes are outside this population.
+- `fhir/`: source-named files, preserving NDJSON/JSONL and gzip formats and
+  directories relative to the source files' common parent. A deduplicated root
+  appears in its first source file, with contained resources nested once.
+  Single-resource JSON stays JSON; unpacked Bundle roots use `.ndjson` files.
 - `perturbation-state.sqlite`: settings, source fingerprint, definition
   provenance, identity maps, patient parameters, exact changes, action counts,
   numeric frequencies and run status. It contains original source values.
 - `perturbation-report.json`: coverage by root resource type and normalized
   field path, original warning counts, before/after numeric summaries and
   actual relative changes, including unchanged numeric values. It omits source
-  string examples; exact context coding/unit values are in the local database.
+  clinical string examples; exact context coding/unit values are in the local
+  database. The `export` section lists source-relative filenames, record counts
+  and decompressed checksums. Filename collisions fail before creating output.
 
 Each object, array and scalar has an action count; these counts are not the
 number of resources. Numeric contexts include preserved numeric fields as well
@@ -168,6 +172,12 @@ values. Undoing the recorded changes must reproduce every source root's digest.
 This verifies that codes, booleans, arrays, empty/missing fields, unknown content
 and all other unrecorded fields are preserved. Adding a missing root ID is the
 only permitted added field.
+
+The flat NDJSON used for that validation is temporary. `export_files.py` then
+partitions it by source occurrence, writes the final files and rereads each one
+to check its decompressed SHA-256 digest. Only afterward are the export directory
+and report published and the temporary stream removed. Numeric statistics still
+count deduplicated roots once, independently of how many source files exist.
 
 This proves the specified transformations and preservation properties. It does
 not establish every clinical dependency, full FHIR conformance or unchanged
@@ -241,4 +251,4 @@ python3 tools/build_fhir_type_index.py \
 
 Hospital profile packages are not bundled; recognized fields use the base
 definitions even when `meta.profile` names an unfamiliar profile. The report
-explicitly records that hospital-profile conformance has not been established.
+contains transformation counts, measured changes and validation results.

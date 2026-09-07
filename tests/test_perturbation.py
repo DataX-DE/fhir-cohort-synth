@@ -14,6 +14,7 @@ from unittest.mock import patch
 from uuid import UUID
 
 from fhir_cohort_synth.cli import main
+from fhir_cohort_synth.export_files import iter_export_lines
 from fhir_cohort_synth.fhir_types import TypeIndex
 from fhir_cohort_synth.ingest import InputError, ingest
 from fhir_cohort_synth.jsonio import dumps, loads
@@ -108,7 +109,7 @@ class PerturbationTests(unittest.TestCase):
 
     def run_engine(self, **kwargs):
         self.header = perturb(self.cohort, self.output, **kwargs)
-        self.records = [loads(line) for line in (self.output/'perturbed.ndjson').read_text().splitlines()]
+        self.records = [loads(line) for line in iter_export_lines(self.output)]
         self.db = sqlite3.connect(self.output/'perturbation-state.sqlite')
         self.db.row_factory = sqlite3.Row
         self.addCleanup(self.db.close)
@@ -441,10 +442,10 @@ class PerturbationTests(unittest.TestCase):
         self.run_engine()
         second = self.root/'second'
         perturb(self.cohort, second)
-        self.assertEqual((self.output/'perturbed.ndjson').read_bytes(), (second/'perturbed.ndjson').read_bytes())
+        self.assertEqual((self.output/'fhir/source.ndjson').read_bytes(), (second/'fhir/source.ndjson').read_bytes())
         self.assertEqual(before, hashlib.sha256(self.cohort.read_bytes()).hexdigest())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
-        for name in ('perturbed.ndjson', 'perturbation-state.sqlite', 'perturbation-report.json'):
+        for name in ('fhir/source.ndjson', 'perturbation-state.sqlite', 'perturbation-report.json'):
             self.assertEqual((self.output/name).stat().st_mode & 0o777, 0o600)
         self.assertFalse(list(self.output.glob('*-wal')))
 
@@ -517,7 +518,7 @@ class PerturbationTests(unittest.TestCase):
             self.assertEqual(run['schema_version'], 1)
         perturb(legacy_path, self.root / 'legacy-output')
         perturb(self.cohort, self.output)
-        for name in ('perturbed.ndjson', 'perturbation-report.json'):
+        for name in ('fhir/source.ndjson', 'perturbation-report.json'):
             self.assertEqual((self.root / 'legacy-output' / name).read_bytes(),
                              (self.output / name).read_bytes())
         self.assertEqual(legacy_path.read_bytes(), before)
@@ -604,7 +605,7 @@ class PerturbationTests(unittest.TestCase):
         ingest([REPO/'examples/mii-demo-bundle.json'], self.cohort.parent)
         self.run_engine()
         self.assertEqual(self.header['counts']['root_resources'], 23)
-        report = ingest([self.output/'perturbed.ndjson'], self.root/'reingestion')
+        report = ingest([self.output/'fhir'], self.root/'reingestion')
         self.assertNotEqual(report['status'], 'incomplete')
         with closing(sqlite3.connect(self.root/'reingestion/cohort.sqlite')) as db, db:
             self.assertEqual(db.execute("SELECT count(*) FROM resource_references WHERE status<>'resolved'").fetchone()[0], 0)

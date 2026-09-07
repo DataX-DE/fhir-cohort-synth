@@ -44,10 +44,10 @@ class WorkflowTests(unittest.TestCase):
         ingest([EXAMPLE], self.root / 'manual-index')
         perturb(self.root / 'manual-index/cohort.sqlite', self.root / 'manual-output',
                 strength='0.03', date_shift_days=7, seed=17)
-        for name in ('perturbed.ndjson', 'perturbation-report.json'):
+        for name in ('fhir/mii-demo-bundle.ndjson', 'perturbation-report.json'):
             self.assertEqual((self.output / 'perturbed' / name).read_bytes(),
                              (self.root / 'manual-output' / name).read_bytes())
-        reingested = ingest([self.output / 'perturbed/perturbed.ndjson'], self.root / 'reingested')
+        reingested = ingest([self.output / 'perturbed/fhir'], self.root / 'reingested')
         self.assertNotEqual(reingested['status'], 'incomplete')
         self.assertEqual(reingested['counts']['unique_resources'], 23)
         self.assertEqual(reingested['reference_status'], {'resolved': 37})

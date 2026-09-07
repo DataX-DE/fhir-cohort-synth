@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from fhir_cohort_synth.ingest import ingest
 from fhir_cohort_synth.jsonio import loads
 from fhir_cohort_synth.perturbation import perturb
+from fhir_cohort_synth.export_files import iter_export_lines
 from tools.check_r4_examples import issue_key, outcome_files, write_json
 
 PACKAGES = {'base': '2026.0.0', 'laborbefund': '2026.0.3', 'medikation': '2026.0.1',
@@ -146,7 +147,8 @@ def run(packages, output):
                     case['pairs'] = []
                     # 3. Pair by the pipeline's root order before IDs change.
                     # strict=True catches missing or extra output lines.
-                    with closing(sqlite3.connect(cohort)) as db, (directory / 'perturbed/perturbed.ndjson').open() as stream:
+                    with closing(sqlite3.connect(cohort)) as db:
+                        stream = iter_export_lines(directory / 'perturbed')
                         for row, line in zip(db.execute('SELECT id,payload FROM resources WHERE contained=0 ORDER BY id'), stream, strict=True):
                             before, after = loads(row[1]), loads(line)
                             filename = f'{row[0]:04d}.json'

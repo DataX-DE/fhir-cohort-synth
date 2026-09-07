@@ -61,6 +61,8 @@ def open_source(path):
             "SELECT severity,code FROM issues LIMIT 0",
             "SELECT resource_id,patient_resource_id,basis FROM patient_memberships LIMIT 0",
             "SELECT source_resource_id,path,literal,kind,status,target_resource_id FROM resource_references LIMIT 0",
+            "SELECT id,path FROM sources LIMIT 0",
+            "SELECT id,resource_id,source_id,locator FROM occurrences LIMIT 0",
         ):
             source.execute(query)
         if source.execute("SELECT count(*) FROM issues WHERE severity='error'").fetchone()[0]:

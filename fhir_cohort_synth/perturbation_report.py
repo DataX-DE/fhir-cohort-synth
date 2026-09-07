@@ -10,14 +10,13 @@ def build_report(ledger, source_status, validation):
     """Return coverage and measured changes without source string examples."""
     db = ledger.db
     run = db.execute('SELECT * FROM run').fetchone()
-    settings = loads(run['settings_json'])
     fingerprint = run['source_fingerprint']
     metadata = loads(run['definitions_json'])
     issues = [dict(row) for row in db.execute('SELECT * FROM source_issues ORDER BY severity,code')]
     unsupported = db.execute("SELECT coalesce(sum(frequency),0) FROM field_actions WHERE action='unsupported'").fetchone()[0]
     status = 'completed_with_warnings' if unsupported or source_status == 'completed_with_warnings' else 'completed'
     header = {'schema_version': 1, 'status': status, 'data_classification': 'perturbed_source_derived_data',
-              'privacy_guarantee': False, 'settings': settings, 'source_fingerprint': fingerprint,
+              'source_fingerprint': fingerprint,
               'datatype_definitions': metadata, 'source_issues': issues,
               'population': 'deduplicated_non_contained_roots_with_contained_subtrees',
               'resource_types': dict(db.execute('SELECT resource_type,count(*) FROM resource_mappings WHERE resource_id=root_id GROUP BY resource_type ORDER BY resource_type')),
@@ -28,15 +27,7 @@ def build_report(ledger, source_status, validation):
               'validation': {**validation, 'preserved_content_and_structure_verified': True,
                              'consistently_resolved_reference_targets_verified': True,
                              'changed_dates_use_shared_offsets': True,
-                             'changed_quantities_use_shared_factors': True},
-              'limitations': ['No privacy or anonymization guarantee; output and mappings contain source-derived information.',
-                              'Inline resources outside containment (such as Parameters.parameter.resource) are preserved without identity or patient transformations.',
-                              'No full FHIR, hospital-profile or clinical dependency validation.',
-                              'Unknown extensions/content and unresolved references may remain unchanged; identity/reference remapping takes precedence.',
-                              'Shared or unassigned resources retain quantities/dates. Partial and invalid dates remain unchanged.',
-                              'Temperatures, percentages, logarithmic or unknown units remain unchanged.',
-                              'Narrative, attachments and non-identity text remain unchanged.',
-                              'Rounding can reduce small changes or alter ratios; zero-relative change is undefined for zero baselines.']}
+                             'changed_quantities_use_shared_factors': True}}
     return header
 
 
@@ -55,5 +46,3 @@ def write_report(path, header, ledger):
                 separator = ',\n'
             stream.write(']' + (',\n' if position == 0 else '\n'))
         stream.write('}\n')
-
-

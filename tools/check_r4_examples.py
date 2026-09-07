@@ -23,6 +23,7 @@ from fhir_cohort_synth.fhir_types import TypeIndex
 from fhir_cohort_synth.ingest import ingest
 from fhir_cohort_synth.jsonio import dumps, loads
 from fhir_cohort_synth.perturbation import perturb
+from fhir_cohort_synth.export_files import iter_export_lines
 
 
 def supplemental_examples():
@@ -156,7 +157,8 @@ def run(package, extra_zip, output):
                 case['validation'] = result['validation']
                 # Pair exactly the roots actually emitted, using source row order.
                 # A Bundle's envelope is kept in source/, never fabricated as output.
-                with closing(sqlite3.connect(cohort)) as db, (case_dir / 'perturbed/perturbed.ndjson').open() as stream:
+                with closing(sqlite3.connect(cohort)) as db:
+                    stream = iter_export_lines(case_dir / 'perturbed')
                     roots = db.execute('SELECT id,payload FROM resources WHERE contained=0 ORDER BY id')
                     for root, line in zip(roots, stream, strict=True):
                         pair = f'{case_id}-{root[0]}.json'

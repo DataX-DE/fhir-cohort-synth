@@ -15,6 +15,8 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
    rounding, unchanged cases and unsupported fields.
 4. Run ingestion and perturbation together with `run --input ... --output ...`.
    The hospital does not need to manage stage inputs.
+5. Publish source-named export files with their NDJSON/JSONL and gzip formats,
+   source ordering and per-file checksums, rather than one merged export.
 
 See [the perturbation guide](perturbation.md) for the API, command, exact field
 handling and worked example. The implementation uses Python's standard library

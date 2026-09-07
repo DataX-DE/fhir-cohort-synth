@@ -9,7 +9,7 @@ Its helpers handle each phase.
 | Stage | Start here | What it produces |
 | --- | --- | --- |
 | Ingest | `ingest.py: ingest()` | `cohort.sqlite`: complete source payloads, identities, references and patient membership |
-| Perturb | `perturbation.py: perturb()` | `perturbed.ndjson`, a state database and a report of actual changes |
+| Perturb | `perturbation.py: perturb()` | Source-named files in `fhir/`, a state database and a report of actual changes |
 
 These modules live under `fhir_cohort_synth/`. `fhir_synth.py` is the launcher;
 `cli.py` parses options, calls the public functions and formats safe console errors.
@@ -72,6 +72,9 @@ Consider this invented resource together with its referenced `Patient/p1`:
    records the actual numeric changes, including changes lost to rounding.
    `perturbation_report.build_report()` assembles those summaries independently
    of the code that edits the resource trees.
+   `export_files.py` writes the checked records into their source files, retaining
+   NDJSON/JSONL and gzip formats. Decompressed checksums verify that packaging
+   preserves the validated bytes; the temporary flat file is then removed.
 
 ## Terms used in the implementation
 
