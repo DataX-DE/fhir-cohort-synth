@@ -80,21 +80,32 @@ def summarize_numbers(db):
     """
     db.create_collation("EXACT_DECIMAL", compare_decimals)
     for fid, count in db.execute("SELECT field_id,sum(frequency) FROM scalar_frequencies WHERE kind='number' GROUP BY field_id"):
-        ranks = [(name, (percent * count + 99) // 100) for name, percent in QUANTILES]
-        cumulative, next_rank = 0, 0
-        minimum, maximum, quantiles = None, None, {}
-        for token, frequency in db.execute(
+        rows = db.execute(
                 "SELECT value_json,frequency FROM scalar_frequencies WHERE field_id=? AND kind='number' "
-                "ORDER BY value_json COLLATE EXACT_DECIMAL,value_json COLLATE BINARY", (fid,)):
-            if minimum is None:
-                minimum = token
-            maximum = token
-            cumulative += frequency
-            while next_rank < len(ranks) and cumulative >= ranks[next_rank][1]:
-                quantiles[ranks[next_rank][0]] = loads(token)
-                next_rank += 1
+                "ORDER BY value_json COLLATE EXACT_DECIMAL,value_json COLLATE BINARY", (fid,))
+        minimum, maximum, quantiles = numeric_summary(rows, count)
         db.execute("INSERT INTO numeric_summaries VALUES (?,?,?,?,?,?)",
                    (fid, count, minimum, maximum, dumps(quantiles), "weighted_nearest_rank"))
+
+
+def numeric_summary(rows, count):
+    """Share the exact estimator between marginal and conditional profiles.
+
+    rows must stream (token, frequency) in Decimal order with a binary token
+    tie-break. Frequency weights are observations, not distinct-value weights.
+    """
+    ranks = [(name, (percent * count + 99) // 100) for name, percent in QUANTILES]
+    cumulative, next_rank = 0, 0
+    minimum, maximum, quantiles = None, None, {}
+    for token, frequency in rows:
+        if minimum is None:
+            minimum = token
+        maximum = token
+        cumulative += frequency
+        while next_rank < len(ranks) and cumulative >= ranks[next_rank][1]:
+            quantiles[ranks[next_rank][0]] = loads(token)
+            next_rank += 1
+    return minimum, maximum, quantiles
 
 
 def field_reports(db, statistics=False):

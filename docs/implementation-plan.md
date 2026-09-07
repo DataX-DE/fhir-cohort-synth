@@ -1,304 +1,141 @@
-# Implementation plan: generic JSON profiling and statistical synthesis
+# Plan: retain FHIR structure and perturb selected values
 
-Status: the foundation below is the approach confirmed by the user. Resource
-ingestion, recursive extraction and exact marginal field distributions are
-implemented (milestones 1 and 2). Dependency specifications, sampling, clinical
-and longitudinal enrichment, and generation validation remain to be built.
-See [profiling data and queries](profiling-schema.md) for the implemented schema.
+## Decision and current status
 
-## Agreed foundation
+The selected direction is to keep each source patient's linked resource
+structure and event sequence and change selected values for local hospital use.
+This replaces the earlier independently sampled cohort generator.
+The planned output is called **perturbed source-derived data**. The current
+scope is structural and statistical fidelity, with no privacy, anonymization
+or differential-privacy guarantee. Local execution does not itself anonymize
+the data. Privacy assessment is outside the current implementation scope.
 
-Start with the full nested JSON structure of every resource. Extract every
-field, object, array and value, including unfamiliar fields. Build statistical
-descriptions of those structures and values across resources of the same type.
-Use those distributions and selected dependencies to construct new resources.
+Implemented and retained:
 
-The generic extractor must work without a predefined list of clinical features
-or a separate handwritten extractor for every resource type. Clinical meaning,
-FHIR constraints and longitudinal rules enrich this common representation.
+- Ingestion of local FHIR JSON/NDJSON exports, preserved payloads, reference
+  resolution, containment and patient membership.
+- Recursive extraction of every object, array and scalar, with typed paths,
+  parent/array associations, empty values and decimal precision.
+- Exact field distributions, explicit relationship rules and configured
+  joint/conditional distributions with resource/patient support.
 
-The user selected longitudinal analysis as an eventual fidelity priority.
-That remains a requirement for the complete generator; it does not replace or
-delay the generic field extraction and distribution-building foundation.
+The `generate` command, generator, sampling helper and generation-specific
+tests/documentation have been removed. Existing local generated files and their
+review remain available as evidence of the previous approach's limitations.
+A recoverable copy of the removed implementation is kept in ignored local
+`work/retired-generation-*` storage. No perturbation command exists yet.
 
-Use counts, distribution summaries and explicit conditional probability tables.
-No neural training or automatic graphical-model training is planned. An optional
-copula would be a later statistical estimator, with parameters estimated locally.
+The generic profiler covers all retained resource fields. Semantic mappings,
+unit normalization, full profile validation and privacy protection are not
+provided by generic JSON traversal. Bundle envelopes are stored separately;
+contained subtrees are profiled once under their owning root.
 
-## Pipeline
-
-```text
-Local FHIR JSON resources
-  -> preserved resources and reference index                 [implemented]
-  -> recursive extraction of all structure and values        [implemented]
-  -> distributions for each resource type and field path     [implemented]
-  -> joint/conditional distributions for related fields
-  -> sampling of new nested resource structures and values
-  -> new references, clinical/temporal rules and validation
-```
-
-The complete pipeline is iterative: add required field relationships and
-longitudinal context before claiming that generated patient records preserve
-them. An independent-field sampler is only a diagnostic baseline.
-
-## Milestone 1: generic recursive extraction
-
-Read every ingested resource and walk its JSON tree. Record both container
-nodes and leaf values. Observing only leaves would lose the difference between
-an absent field, an empty object, an empty array and an explicit null.
-
-For every occurrence, retain:
-
-| Attribute | Purpose |
-| --- | --- |
-| Resource type and internal resource key | Separate resource populations and connect fields from the same resource |
-| Declared profile URLs/versions | Additional grouping and later validation context; not an extraction prerequisite |
-| Concrete source path | Locate the exact original field, including array positions |
-| Normalized field path | Combine corresponding fields across resources |
-| Parent node and array-element identity | Keep sibling fields and repeated groups associated |
-| Node/JSON value type | Distinguish object, array, string, number, boolean and null |
-| Original value or container shape | Preserve leaf values, child keys, array order and lengths |
-| Provenance | Trace the field to the source resource/file occurrence |
-
-For example, the concrete paths
+## Replacement workflow
 
 ```text
-component[0].valueQuantity.value
-component[1].valueQuantity.value
+Local FHIR export
+  -> ingestion and existing linked resource graph          [implemented]
+  -> recursive field inventory and exact statistics        [implemented]
+  -> explicit transformation policies and coverage report  [planned]
+  -> coordinated changes to existing records               [planned]
+  -> structural, statistical and FHIR validation            [planned]
 ```
 
-share the display path `component[*].valueQuantity.value`, but remain associated
-with different component instances. Use structured path tokens internally so
-literal dots, brackets or asterisks in object keys cannot collide with path
-syntax.
+Patient counts, encounter membership, nested groups and event ordering come
+from the source. There is no new patient/encounter-count or trajectory sampler.
+Existing conditional statistics become baselines for choosing compatible
+contexts and measuring distortion. No source is modified in place.
 
-Visit arbitrary nested objects, heterogeneous arrays, arrays of arrays,
-extensions and primitive companion fields such as `_birthDate`. Preserve
-numeric precision and never coerce an identifier-like string into a number.
-A missing field is inferred relative to eligible parents, not represented by
-inventing a source value.
+## 1. Assign an action to every field
 
-Use the ingestion index to avoid counting exact duplicate resources twice.
-Retain containment ownership: do not count a contained resource's fields again
-because its payload appears both inside its parent and in a separate indexed
-row. Multiple profile declarations must not multiply the base resource count.
+Use the existing typed paths, anchors and reference graph. Add common FHIR
+datatype/semantic handlers and a small readable JSON policy file, rather than
+a separate JSON parser for each resource type. A JSON string alone does not
+identify a code, date, name or reference; profile definitions or explicit
+policies supply that distinction.
 
-**Deliverable:** a local field-occurrence index and a readable structure
-inventory. These contain source information and remain on hospital storage.
+Each field has a reported action: preserve, replace, shift, perturb, redact
+or unsupported. Missing mappings must remain visible. Arbitrary extensions,
+primitive companions, modifier extensions and unknown resource fields must
+have their handling recorded, including content deliberately left unchanged.
 
-**Completion checks:** reconstruct equivalent parsed JSON from the extracted
-node structure; preserve nested associations, values and empty containers.
-Fixtures include unknown fields, key/path collisions, mixed types, repeated
-objects, nulls, booleans, decimals, primitive extensions and containment.
-No field may disappear merely because no clinical mapping exists.
-
-## Milestone 2: distributions of structure and values
-
-Group observations first by resource type and normalized field path. Retain
-parent/resource association throughout. Profile all observed paths, including
-container nodes; enumerate the union of child keys across corresponding parents
-so that absence can be counted.
-
-| Observed information | Statistical description |
+| Field role | Proposed treatment |
 | --- | --- |
-| Field/object presence | Present and absent counts with eligible-parent denominator |
-| JSON value types | Counts/proportions of each type at the path |
-| Object shape | Child-key presence and supported co-occurring key patterns |
-| Array shape | Length distribution, empty-array rate and element-type patterns |
-| Numeric values | Counts, range, quantiles and a specified histogram/empirical distribution representation |
-| Strings and booleans | Frequencies, cardinality and string-format/length summaries |
-| Null/empty values | Separate counts; not silently converted to absence or zero |
-| Repeated elements | Per-element distributions and their resource/parent associations |
+| Numeric measurements | Calibrate changes within compatible code/unit/comparator contexts; coordinate related and repeated values |
+| Categories and booleans | Preserve explicitly or use valid, context-aware substitutions of related fields together |
+| IDs and references | Create replacement identities and rewrite all resolved links consistently, including contained and supporting resources |
+| Dates and periods | Apply a shared patient-level shift where appropriate, preserving durations, ordering, precision and time zones; report conflicts involving shared resources |
+| Names, identifiers, narrative and free text | Use explicit replacement/redaction rules; never treat arbitrary text as a safe categorical code |
+| Attachments and external URLs | Require an explicit content policy; changing an attachment URL does not sanitize its contents |
+| Resource types, schema keys, public terminology/profile identifiers | Preserve their meaning and syntax; these are not measurement values to noise |
+| Objects, arrays and unknown fields | Retain associations; report unsupported transformations and any deliberate structural changes |
 
-A generic numeric or string summary describes the source representation; it
-does not establish that the field is a meaningful clinical variable or safe
-to sample. High-cardinality strings need an explicit storage/reporting policy
-such as bounded frequency summaries with a remainder count. This must not
-discard their original values from the local source/occurrence index.
+Redaction must respect required fields and FHIR types. Unsupported handling
+can block an export or be explicitly configured for preservation with that
+limitation recorded. Cover every
+observed resource type in the report, even when its transformation is unsupported.
 
-Denominators are part of every profile. For example:
+## 2. Apply coordinated perturbations
 
-- `P(valueQuantity exists | Observation)` uses eligible Observation resources.
-- `P(unit exists | valueQuantity exists)` uses existing quantity objects.
-- Component-field presence uses eligible component objects, not all patients.
+Keep the implementation small: a policy/handler module and a coordinator that
+reads resources, applies changes and writes a new output. Reuse existing
+database checks, typed paths and relationship groups. No new extraction layer,
+neural training or large dependency stack is needed for this stage.
 
-A resource with 100 array elements must not automatically receive 100 times
-the weight in a resource-level statistic. Publish element-weighted and
-resource-weighted views separately when needed. Keep observed nulls visible as
-source anomalies even where a later FHIR validator disallows them.
+Changes must share context across resources. For example, repeated heights and
+their unit equivalents need a consistent transformation. Related measurement
+fields cannot receive unrelated changes merely because they occupy different
+JSON paths. Shifting all dates for a patient preserves intervals, but does not
+by itself conceal a distinctive history or preserve calendar-date distributions.
 
-Declare exact versus approximate estimators, histogram boundaries, precision,
-sample counts and configuration in the output. Spill large intermediate counts
-to local storage; do not require the whole cohort to fit in memory.
+Select mechanisms through small experiments before fixing the implementation:
 
-**Deliverable:** versioned structural/value distributions and coverage counts.
-Every path has a summary or an explicit reason a particular estimator does
-not apply. These are local statistics, not automatically safe release artifacts.
+- For numeric values, compare bounded or rank-based changes within compatible
+  contexts, with transformation parameters shared across dependent groups.
+  Bounds, rounding and unit conversions must not introduce invalid values.
+- For categories, evaluate invariant post-randomization (PRAM) on valid grouped
+  states where appropriate. It can preserve selected frequencies in expectation;
+  it does not automatically preserve all joint relationships or every finite
+  output's exact counts. See [Statistics Netherlands on PRAM](https://research.cbs.nl/casc/Related/Sdp_98_2.pdf)
+  and the [US Census study of invariant PRAM](https://www.census.gov/library/working-papers/2014/adrm/cdar2014-01.html).
 
-**Completion checks:** hand-calculated examples verify presence denominators,
-array lengths, type frequencies, numeric summaries and string counts. Verify
-that unrecognized resource fields receive the same generic treatment.
+These are candidate transformations, not implemented algorithms.
+Preserving original links helps retain context, but value changes can still
+break clinical relationships; the validation step must detect that.
 
-## Milestone 3: dependencies between fields and repeated groups
+## 3. Measure structural and statistical fidelity
 
-Keep the generic extraction independent of domain-specific rules. Build
-relationships on top of the retained parent, array and resource identities.
+"Same distribution type" is too weak as an acceptance criterion. For example,
+adding independent Gaussian noise to Gaussian values retains that family while
+increasing variance. Other combinations change the family itself. Real fields
+also need not belong to one simple parametric family.
 
-Start with explicit dependency specifications for:
+Compare the original and perturbed outputs using the existing profiler:
 
-1. Object/choice structure: which fields and types can occur together.
-2. Sibling fields: categorical combinations and conditional value distributions.
-3. Repeated objects: array length, element shape and associated sibling values.
-4. Context elsewhere in the same resource, reached through the owning object.
-5. Cross-resource context, reached through the existing reference graph.
+- Every resource type and field: coverage/action counts, structure, missingness,
+  category frequencies, numeric quantiles and empirical distribution changes.
+- Related groups: joint/conditional distributions, repeated-measurement
+  variation, unit consistency and dependencies within patients and encounters.
+- Resource graph: replacement IDs, resolved references, containment, shared
+  resources, encounter hierarchy and patient membership.
+- Time and FHIR: ordering, intervals, datatypes, choice fields and the exact
+  hospital profile/terminology packages when available.
 
-For a quantity, field-path marginals are still useful as inventory, but sampling
-may need a distribution conditioned on the associated measurement coding,
-unit and other relevant context. Do not combine incompatible measurements just
-because they share `valueQuantity.value`.
+Set explicit distortion tolerances per relevant context before claiming useful
+distribution preservation. Tests must cover numbers, categories, booleans,
+dates, text, references, unknown fields, arrays and missing/empty values, not
+only height and weight. Preserve the ingestion/profiling tests and use the
+invented FHIR example before repeating the local cohort review.
 
-For a component, its code and value belong to that component instance.
-Normalizing array indices must never turn that into all possible code/value
-pairs. Multiple coding translations are attributes of one clinical concept,
-not automatically independent measurements.
+## Local execution and delivery
 
-Use conditional frequency tables, grouped numeric distributions and selected
-joint summaries. Specify a bounded conditioning set, sample support, smoothing
-and fallback rules. Do not attempt a full joint table over every JSON field.
-Never pool incompatible contexts merely to enlarge a small group.
+Retain read-only inputs, fresh output directories, local-only processing,
+private file permissions and completion/error reporting. Outputs stay local;
+external release and privacy certification are outside the current scope.
+Packaging follows a working, validated transformation stage; a bundled Python
+runtime can keep hospital setup small.
 
-Generic co-occurrence cannot determine every clinical dependency. Optional
-FHIR/profile definitions and explicit semantic adapters supply constraints and
-context rules while continuing to use the same extracted field representation.
-Unknown semantics remain visible as limits on generation, rather than being
-silently omitted from extraction.
-
-**Deliverable:** a dependency specification plus conditional distributions,
-including supported contexts and fallback behavior.
-
-**Completion checks:** invented examples preserve code/unit/value associations,
-choice-field patterns and repeated-group membership. Sampling must not claim
-to preserve relationships that were never modeled or checked.
-
-## Milestone 4: sample new nested JSON resources
-
-Generate new structures from the distributions, then populate associated
-values according to the dependency specification:
-
-- Choose supported object shapes, optional fields and value types.
-- Sample array lengths and construct new element objects.
-- Sample compatible field groups and dependent values.
-- Assign fresh identities and construct references between new resources.
-- Apply required fixed values, derived values and validated constraints.
-
-Do not use source resources or whole source array elements as donor templates.
-Generation draws from distributions; ordinary clinical values may naturally
-coincide with observed values, but complete patient records are not copied.
-
-Separate extraction coverage from generation eligibility. Every field is
-extracted, but source identifiers, names, addresses, narratives and attachments
-cannot simply be sampled from their observed values. A generation policy must
-identify fields to sample, derive, generate anew, omit when permitted, or block
-pending an interpretation. Unknown required fields or modifier semantics may
-prevent generation for that profile while remaining fully visible in profiling.
-
-A quantity comparator, its numeric threshold and its unit must stay associated.
-A value marked '<' is not treated as an exact measurement. Dates, complex
-datatypes and local extensions require appropriate interpretation before making
-clinical fidelity claims.
-
-**Deliverable:** new resources generated from a supported subset of the
-statistical description, with seeded randomness and an explicit coverage report.
-
-## Milestone 5: add clinical and longitudinal fidelity
-
-Use the generic field facts, relationships and FHIR/profile definitions to
-derive linked clinical events and patient timelines. This is an enrichment
-layer; do not create a second extraction path that silently loses arbitrary
-fields from the generic representation.
-
-For the hospital scope, enrich Patient, Encounter, Condition, Observation,
-Procedure, MedicationAdministration and supporting Medication, Consent and
-Location. Preserve unknown local resource/profile fields throughout.
-
-The user-selected longitudinal target requires:
-
-- Encounter hierarchy, event times, interval durations and follow-up windows.
-- Measurement counts and irregular time gaps by relevant context.
-- Value changes conditional on previous values, elapsed time and recent history.
-- Joint behavior of paired or aligned measurements.
-- Procedure/medication sequences, overlap and treatment start/stop patterns.
-- Patient-level weighting and uncertainty, distinct from event-level totals.
-
-Estimate temporal distributions and transitions using explicit definitions
-and supported conditional tables. Field histograms alone cannot preserve
-trajectories. If a short-memory process is used as an initial sampler, measure
-its limitations on longer trends before deciding whether to extend it.
-
-Construct new patient trajectories with generated calendar anchors and fresh
-references. Coordinate counts, timing, values and treatment state under the
-specified dependencies. Preserve timestamp precision and unknown endpoints;
-the end of an export is not evidence of recovery, discharge or death.
-
-## Milestone 6: validate and package the supported scope
-
-Check structural reconstruction, extraction coverage and statistical fidelity
-before generation. After generation, compare the source and synthetic data with
-the same profiler and denominator definitions. Verify field distributions,
-object shapes, array structure and declared conditional relationships.
-
-For the longitudinal release, also compare inter-event gaps, value changes,
-event transitions, treatment durations, within-patient variability and selected
-downstream longitudinal queries. Define tolerances and minimum support per use
-case; matching marginal histograms is not sufficient.
-
-Validate base FHIR, the pinned hospital profiles and reference integrity.
-The provisional FHIR target is R4 4.0.1; the supplied profile list does not
-confirm the hospital's exact deployed package versions.
-
-Keep all processing offline. Bundle the runtime, any needed numerical
-libraries, profiles and terminology assets for the hospital's target OS.
-Benchmark realistic export sizes. Keep source data and intermediate occurrence
-indexes on approved local storage.
-
-Assess disclosure separately from fidelity. Synthetic data and aggregate
-statistics do not automatically provide a privacy guarantee. Identifier/text
-leakage, rare combinations and close source trajectories need evaluation; a
-formal differential-privacy requirement would need its own design.
-
-## Implementation progress and boundaries
-
-**Milestones 1 and 2 are implemented**, using invented nested JSON fixtures and
-the existing FHIR example. Tests check complete extraction, reconstruction,
-parent/array associations, exact frequencies and statistical denominators.
-Clinical adapters are not prerequisites for this profiler. The next milestone
-is explicit dependencies between fields and repeated groups.
-
-Keep the implementation split into small modules:
-
-| Module or planned component | Responsibility |
-| --- | --- |
-| `json_fields.py` | Recursive nodes, typed paths and parent/array associations |
-| `field_store.py` | Local occurrence index and provenance |
-| `field_statistics.py` | Structural/value distributions and denominators |
-| `dependencies.py` | Explicit context relationships and conditional summaries |
-| `sampling.py` | New nested structures and associated values |
-| `fhir_rules/` | Identity/reference handling, semantic adapters and constraints |
-| `validation/` | Structural, statistical, FHIR and temporal checks |
-
-The `profile` command now produces `field-occurrences.sqlite`,
-`field-inventory.json` and `field-statistics.json`. A dependency/generation-policy
-specification, synthetic FHIR files and generation validation reports remain
-planned outputs.
-
-The existing `store.py` remains the ingestion/reference layer. Reuse its
-resources and provenance without expanding it into a large clinical parser.
-
-## Specification references
-
-The design above is the project's chosen approach. FHIR definitions support
-the later semantic and conformance layers:
-
-- [HL7 R4 Observation](https://hl7.org/fhir/R4/observation.html)
-- [HL7 R4 datatypes](https://hl7.org/fhir/R4/datatypes.html)
-- [HL7 R4 profiling](https://hl7.org/fhir/R4/profiling.html)
+See [field extraction and profiling](profiling-schema.md),
+[relationship rules](dependencies.md), [conditional statistics](conditional-statistics.md)
+and [FHIR R4 datatypes](https://hl7.org/fhir/R4/datatypes.html) for the retained
+foundation and semantic constraints.

@@ -5,6 +5,7 @@ single transaction. Output completion is recorded only after both reports have
 been fully written. Failed/interrupted output must be retried in a new folder.
 """
 from contextlib import contextmanager
+import hashlib
 from pathlib import Path
 import sqlite3
 
@@ -16,6 +17,26 @@ from .jsonio import dumps, loads
 
 class ProfileError(InputError):
     """Fixed diagnostic text suitable for the CLI, without source values."""
+
+
+def source_fingerprint(source):
+    """Identify a cohort snapshot independently of its filesystem location.
+
+    Generation combines conditional values with patient/encounter counts. Both
+    must come from the same resources AND resolved graph. Stream the signature
+    rather than collecting the cohort; source strings never enter the report.
+    """
+    digest = hashlib.sha256()
+    for query in (
+        "SELECT id,identity,digest,resource_type,contained FROM resources ORDER BY id",
+        "SELECT resource_id,patient_resource_id,basis FROM patient_memberships ORDER BY resource_id",
+        "SELECT source_resource_id,path,literal,kind,target_resource_id,status FROM resource_references ORDER BY id",
+    ):
+        digest.update(query.encode())
+        for row in source.execute(query):
+            digest.update(dumps(list(row)).encode("utf-8"))
+            digest.update(b"\n")
+    return digest.hexdigest()
 
 
 @contextmanager

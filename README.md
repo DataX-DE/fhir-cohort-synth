@@ -1,10 +1,24 @@
 # fhir-cohort-synth
 
-An offline tool for creating statistically representative synthetic patient
-cohorts from local FHIR exports. **Ingestion, complete recursive JSON extraction
-and exact field distributions are implemented.** Dependent sampling, clinical
-and longitudinal enrichment, synthetic generation and output profile validation
-will follow. The current commands do not train a model or generate patients.
+An offline tool for ingesting and statistically profiling local FHIR exports.
+**Ingestion, complete recursive JSON extraction and exact field/conditional
+distributions are implemented.** The next stage will perturb selected values
+while retaining existing linked resource structures and event sequences.
+Perturbation is planned, not implemented. The earlier independent cohort
+sampler has been retired. There is no current `generate` command.
+
+The planned output is **perturbed source-derived data**, for local hospital use.
+The current scope covers structural and statistical fidelity; it makes no
+privacy, anonymization or differential-privacy guarantee. Local execution
+describes where processing occurs, not whether the data are anonymous.
+Privacy assessment is outside the current implementation scope. No model
+training is required for the implemented profiling stages.
+
+The Python dependency API groups related fields and follows direct resource
+references using explicit JSON rules. Conditional profiling now counts exact
+joint outcomes within those configured contexts; see
+[field relationship rules](docs/dependencies.md) and
+[conditional distributions](docs/conditional-statistics.md).
 
 ## Run ingestion
 
@@ -92,6 +106,35 @@ runs may retain local partial data; retry in a new directory.
 
 See [profiling data and queries](docs/profiling-schema.md) for the node layout,
 exact-frequency queries, denominator definitions and an example walkthrough.
+
+## Calculate conditional distributions
+
+After ingestion and field profiling, use rules with a `statistics` section:
+
+```sh
+python3 fhir_synth.py profile-conditional --input local-data/demo/cohort.sqlite --fields local-data/profile/field-occurrences.sqlite --rules examples/dependency-rules.json --output local-data/conditional
+```
+
+This creates `conditional-statistics.sqlite` and `conditional-statistics.json`.
+Each configured object contributes one count; nested collections stay grouped.
+Outputs include exact joint frequencies, conditional probabilities, numeric
+summaries and separate resource/patient support counts. Unsupported linked
+contexts are excluded with explicit counts. Inputs remain read-only, and the
+output directory must be new. See the [worked calculation and API guide](docs/conditional-statistics.md).
+
+## Next: perturb existing records
+
+The replacement will use the original resource graph and extracted field
+associations. Common FHIR datatype handlers and explicit field policies will
+coordinate numeric changes, categorical treatment, date shifts, identifier
+replacement and text handling across linked records. Unknown fields will have
+explicit coverage status; generic extraction alone does not determine a valid
+transformation for them.
+
+Source profiles provide the baseline for measuring changes in distributions,
+relationships and event intervals. Preserving every distribution exactly is not
+promised. See the [revised implementation plan](docs/implementation-plan.md)
+for the selected scope, field handling and validation requirements.
 
 ## Supported input
 
@@ -232,13 +275,11 @@ snapshot inputs. Resource-free entries and Bundle/entry metadata are retained
 in the database for inspection.
 
 Generic profiling now provides exact field distributions from completed indexes.
-The next stage must define the conditional relationships and semantic rules
-needed to sample coherent new records from those distributions.
-
-See the [implementation plan](docs/implementation-plan.md) for the
-generic recursive JSON extraction, structural/value distributions and dependent
-sampling stages. Clinical and longitudinal rules build on that foundation.
-The plan separates implemented ingestion/profiling from capabilities still to build.
+The next stage defines coordinated transformations of existing records using
+their field semantics and relationships. See the
+[implementation plan](docs/implementation-plan.md) for the retained foundation
+and planned perturbation stage for local use. Full FHIR/profile validation
+remains future work.
 
 ## Development
 

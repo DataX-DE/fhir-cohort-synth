@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "name": "observation_quantity",
+      "resource_type": "Observation",
+      "anchor": [],
+      "fields": {
+        "coding": {"path": [["key", "code"], ["key", "coding"], ["item", null]]},
+        "value": {"path": [["key", "valueQuantity"], ["key", "value"]]},
+        "comparator": {"path": [["key", "valueQuantity"], ["key", "comparator"]]},
+        "unit": {"path": [["key", "valueQuantity"], ["key", "unit"]]},
+        "unit_system": {"path": [["key", "valueQuantity"], ["key", "system"]]},
+        "unit_code": {"path": [["key", "valueQuantity"], ["key", "code"]]}
+      },
+      "statistics": {
+        "given": [{"field": "coding"}, {"field": "unit_system"}, {"field": "unit_code"}, {"field": "unit"}, {"field": "comparator"}],
+        "targets": [{"field": "value"}]
+      }
+    },
+    {
+      "name": "observation_component",
+      "resource_type": "Observation",
+      "anchor": [["key", "component"], ["item", null]],
+      "fields": {
+        "coding": {"path": [["key", "code"], ["key", "coding"], ["item", null]]},
+        "value": {"path": [["key", "valueQuantity"], ["key", "value"]]},
+        "comparator": {"path": [["key", "valueQuantity"], ["key", "comparator"]]},
+        "unit": {"path": [["key", "valueQuantity"], ["key", "unit"]]},
+        "unit_system": {"path": [["key", "valueQuantity"], ["key", "system"]]},
+        "unit_code": {"path": [["key", "valueQuantity"], ["key", "code"]]},
+        "observation_status": {"from": "root", "path": [["key", "status"]]}
+      },
+      "statistics": {
+        "given": [{"field": "coding"}, {"field": "unit_system"}, {"field": "unit_code"}, {"field": "unit"}, {"field": "comparator"}],
+        "targets": [{"field": "value"}]
+      }
+    },
+    {
+      "name": "observation_encounter",
+      "resource_type": "Observation",
+      "anchor": [],
+      "fields": {
+        "coding": {"path": [["key", "code"], ["key", "coding"], ["item", null]]}
+      },
+      "statistics": {
+        "given": [{"link": "encounter", "field": "class"}],
+        "targets": [{"field": "coding"}]
+      },
+      "links": {
+        "encounter": {
+          "reference": {"from": "root", "path": [["key", "encounter"]]},
+          "resource_type": "Encounter",
+          "fields": {
+            "class": [["key", "class"]],
+            "period": [["key", "period"]]
+          }
+        }
+      }
+    }
+  ]
+}
