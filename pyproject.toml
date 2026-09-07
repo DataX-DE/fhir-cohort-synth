@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fhir-cohort-synth"
+version = "0.1.0"
+description = "Offline FHIR ingestion and exact JSON field profiling for cohort synthesis"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+fhir-cohort-synth = "fhir_cohort_synth.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fhir_cohort_synth*"]
