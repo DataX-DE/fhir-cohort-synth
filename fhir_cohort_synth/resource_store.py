@@ -261,7 +261,7 @@ class ResourceStore:
         """Check value choices on the Observation and each component.
 
         Codes, units and values stay in the payload. Perturbation reads them
-        directly and measures before/after distributions in its own report.
+        directly and stores before/after distributions in its local state database.
         """
         components = resource.get("component", [])
         if not isinstance(components, list):

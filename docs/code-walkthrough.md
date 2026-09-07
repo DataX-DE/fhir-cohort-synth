@@ -69,10 +69,10 @@ Consider this invented resource together with its referenced `Patient/p1`:
    the prepared replacement Patient ID. Codes and units remain unchanged.
 5. **Check what was written.** `_validate()` rereads the emitted JSON, checks
    identities, links and recorded transformations, then undoes each edit in
-   memory. The reconstructed payload must have the original digest. The report
-   records the actual numeric changes, including changes lost to rounding.
-   `perturbation_report.build_report()` assembles those summaries independently
-   of the code that edits the resource trees.
+   memory. The reconstructed payload must have the original digest. The local
+   SQLite ledger records numeric changes, including changes lost to rounding.
+   `perturbation_report.build_report()` assembles coverage and validation counts;
+   numeric distributions and percentage changes are excluded from the JSON report.
    `export_files.py` writes the checked records into their source files, retaining
    NDJSON/JSONL and gzip formats. Decompressed checksums verify that packaging
    preserves the validated bytes; the temporary flat file is then removed.
@@ -87,7 +87,7 @@ Consider this invented resource together with its referenced `Patient/p1`:
 | Owner | The root or contained resource holding a field; its `patient_id` may be absent |
 | Concrete path | One exact location, e.g. `component[0].valueQuantity.value` |
 | Statistical path | The same location with array positions replaced by `[*]` for counting |
-| Measurement context | Ancestor/component coding and unit information used to separate numeric before/after reports |
+| Measurement context | Ancestor/component coding and unit information used to separate local SQLite numeric summaries |
 | Ledger | The state database containing mappings, parameters, edits and action counts |
 
 Paths are tuples of typed segments, not parsed dot strings. For example,

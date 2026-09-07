@@ -66,7 +66,7 @@ def compare_decimals(left, right):
 
 
 def numeric_summary(rows, count):
-    """Summarize weighted numeric frequencies for the perturbation report.
+    """Summarize weighted numeric frequencies for the local state database.
 
     rows must stream (token, frequency) in Decimal order with a binary token
     tie-break. Frequency weights are observations, not distinct-value weights.
@@ -207,18 +207,6 @@ class Ledger:
             item = dict(row)
             item['path'] = loads(item['path'])
             item['display_path'] = display_path(item['path'])
-            yield item
-
-    def report_numbers(self):
-        """Yield summary rows; source coding strings stay in the local database."""
-        for row in self.db.execute('SELECT id,resource_type,path,datatype,samples,changed,zero_baselines FROM numeric_contexts ORDER BY id'):
-            item = dict(row)
-            item['path'] = loads(item['path'])
-            item['display_path'] = display_path(item['path'])
-            item['statistics'] = {r['phase']: loads(r['summary_json']) for r in self.db.execute(
-                'SELECT phase,summary_json FROM numeric_summaries WHERE context_id=? ORDER BY phase', (row['id'],))}
-            # Actual source coding/unit strings live only in context_json in
-            # the local database, not as scalar examples in JSON summaries.
             yield item
 
     def close(self):

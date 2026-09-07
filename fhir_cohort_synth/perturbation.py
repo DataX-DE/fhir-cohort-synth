@@ -367,7 +367,7 @@ def _validate(ledger, destination):
     return counts
 
 
-def perturb(cohort_db, output_dir, *, strength=0.10, date_shift_days=30, seed=42):
+def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, seed=42):
     """Create perturbed source-derived records and return the report header.
 
     The ingestion database must be complete and is opened read-only. We edit

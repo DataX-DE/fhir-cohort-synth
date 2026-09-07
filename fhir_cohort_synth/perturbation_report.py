@@ -1,13 +1,14 @@
 """Build readable perturbation reports from the completed change ledger.
 
 Transformation and preservation checks live in perturbation.py. This module
-only presents their results and the numeric summaries stored by Ledger.
+only presents coverage counts and validation results. Numeric distributions
+and before/after changes stay in the local SQLite ledger.
 """
 from .jsonio import dumps, loads, pretty_json
 
 
 def build_report(ledger, source_status, validation):
-    """Return coverage and measured changes without source string examples."""
+    """Return coverage and validation counts without source value summaries."""
     db = ledger.db
     run = db.execute('SELECT * FROM run').fetchone()
     fingerprint = run['source_fingerprint']
@@ -32,17 +33,15 @@ def build_report(ledger, source_status, validation):
 
 
 def write_report(path, header, ledger):
-    """Stream potentially large field/context sections instead of building lists."""
+    """Stream field coverage; never export local numeric summaries or changes."""
     with path.open('x', encoding='utf-8') as stream:
         path.chmod(0o600)
         stream.write('{\n')
         for key, value in header.items():
             stream.write(dumps(key) + ':' + pretty_json(value) + ',\n')
-        for position, (key, rows) in enumerate([('fields', ledger.report_fields()), ('numeric_contexts', ledger.report_numbers())]):
-            stream.write(dumps(key) + ':[')
-            separator = '\n'
-            for row in rows:
-                stream.write(separator + pretty_json(row))
-                separator = ',\n'
-            stream.write(']' + (',\n' if position == 0 else '\n'))
-        stream.write('}\n')
+        stream.write('"fields":[')
+        separator = '\n'
+        for row in ledger.report_fields():
+            stream.write(separator + pretty_json(row))
+            separator = ',\n'
+        stream.write(']\n}\n')

@@ -47,10 +47,10 @@ class HandlerTests(unittest.TestCase):
     def test_percentage_endpoints_and_both_signs(self):
         # Control the magnitude/sign draws separately to hand-check the formula.
         for bits, sign, expected in [(0, 0, '0.99'), (0, 1, '1.01'),
-                                     (2**53 - 1, 0, '0.90'), (2**53 - 1, 1, '1.10')]:
+                                     (2**53 - 1, 0, '0.84'), (2**53 - 1, 1, '1.16')]:
             with patch('fhir_cohort_synth.perturbation_handlers.random.Random') as random_stream:
                 random_stream.return_value.getrandbits.side_effect = [bits, sign]
-                self.assertEqual(quantity_factor(42, 'root', (), Decimal('.10')), Decimal(expected))
+                self.assertEqual(quantity_factor(42, 'root', (), Decimal('.16')), Decimal(expected))
         self.assertEqual(quantity_factor(42, 'root', (), Decimal(0)), 1)
 
     def test_field_draws_are_repeatable_separate_and_within_custom_bounds(self):
@@ -69,7 +69,7 @@ class HandlerTests(unittest.TestCase):
         self.assertNotEqual(quantity_factor(42, 'root', (('key', 'a.b'),), Decimal('.10')),
                             quantity_factor(42, 'root', (('key', 'a'), ('key', 'b')), Decimal('.10')))
 
-    def test_numeric_report_quantiles_use_decimal_order_and_occurrence_weights(self):
+    def test_local_numeric_quantiles_use_decimal_order_and_occurrence_weights(self):
         # 10E-1 is smaller than 1.000...001; float coercion would lose that
         # distinction. Three copies of the latter also determine the median.
         precise = '1.00000000000000000001'
@@ -139,6 +139,11 @@ class PerturbationTests(unittest.TestCase):
         self.db.row_factory = sqlite3.Row
         self.addCleanup(self.db.close)
         self.report = loads((self.output/'perturbation-report.json').read_text())
+        # Numeric summaries are hospital-local SQLite data, never report fields.
+        self.numeric_contexts = [dict(row) for row in self.db.execute('SELECT * FROM numeric_contexts ORDER BY id')]
+        for context in self.numeric_contexts:
+            context['statistics'] = {row['phase']: loads(row['summary_json']) for row in self.db.execute(
+                'SELECT phase,summary_json FROM numeric_summaries WHERE context_id=?', (context['id'],))}
         return self.records
 
     def test_independent_changes_for_components_repeats_and_supported_units(self):
@@ -153,7 +158,9 @@ class PerturbationTests(unittest.TestCase):
         after = [records[1]['valueQuantity']['value'], records[2]['valueQuantity']['value'], cm, inch]
         changes = [(new - old) / old for old, new in zip(before, after)]
         self.assertEqual(len(set(changes)), 4)
-        self.assertTrue(all(Decimal('.009999') <= abs(c) <= Decimal('.100001') for c in changes))
+        self.assertTrue(all(Decimal('.009999') <= abs(c) <= Decimal('.160001') for c in changes))
+        settings = loads(self.db.execute('SELECT settings_json FROM run').fetchone()[0])
+        self.assertEqual(settings['strength'], Decimal('.16'))
         self.assertEqual([c['valueQuantity']['code'] for c in records[1]['component']], ['cm', '[in_i]'])
         self.assertEqual(self.header['validation']['quantities_checked'], 4)
         self.assertTrue(self.header['validation']['changed_quantities_use_independent_field_factors'])
@@ -176,7 +183,7 @@ class PerturbationTests(unittest.TestCase):
             self.assertEqual(resources[i]['valueQuantity'], result[i]['valueQuantity'])
         self.assertEqual(result[5]['onsetAge'], resources[5]['onsetAge'])
         self.assertEqual(result[6]['position'], resources[6]['position'])
-        self.assertTrue(self.report['numeric_contexts'])
+        self.assertTrue(self.numeric_contexts)
 
     def test_signed_changes_keep_precision_zero_and_small_integer_rounding(self):
         values = [Decimal('100.00'), Decimal('-100.00'), Decimal('0.00'), 1]
@@ -186,8 +193,8 @@ class PerturbationTests(unittest.TestCase):
             self.run_engine()
         self.assertEqual([dumps(r['valueQuantity']['value']) for r in self.records[1:]],
                          ['104.00', '-104.00', '0.00', '1'])
-        self.assertEqual(sum(c['samples'] for c in self.report['numeric_contexts']), 4)
-        self.assertEqual(sum(c['changed'] for c in self.report['numeric_contexts']), 2)
+        self.assertEqual(sum(c['samples'] for c in self.numeric_contexts), 4)
+        self.assertEqual(sum(c['changed'] for c in self.numeric_contexts), 2)
 
     def test_contained_quantities_use_separate_draws_and_duplicates_do_not_multiply(self):
         a = observation('a', Decimal('100.00000'), contained=[
@@ -198,7 +205,7 @@ class PerturbationTests(unittest.TestCase):
         outer = result[1]['valueQuantity']['value']
         inner = result[1]['contained'][0]['valueQuantity']['value']
         self.assertNotEqual(outer, inner)
-        self.assertTrue(all(Decimal('1') <= abs(v - 100) <= Decimal('10') for v in (outer, inner)))
+        self.assertTrue(all(Decimal('1') <= abs(v - 100) <= Decimal('16') for v in (outer, inner)))
         self.assertEqual(result[1]['derivedFrom'][0]['reference'], '#' + result[1]['contained'][0]['id'])
         self.assertEqual(self.header['validation']['quantities_checked'], 2)
 
@@ -220,7 +227,7 @@ class PerturbationTests(unittest.TestCase):
         b = deepcopy(a); b['id'] = 'b'; b['valueQuantity']['system'] = 'urn:unknown-units'
         self.prepare([resource('Patient', 'p'), a, b])
         result = self.run_engine()
-        self.assertTrue(Decimal('1') <= abs(result[1]['valueQuantity']['value'] - 100) <= Decimal('10'))
+        self.assertTrue(Decimal('1') <= abs(result[1]['valueQuantity']['value'] - 100) <= Decimal('16'))
         self.assertEqual(result[2]['valueQuantity'], b['valueQuantity'])
 
     def test_patient_date_offset_birthdate_period_and_observations(self):
@@ -466,7 +473,7 @@ class PerturbationTests(unittest.TestCase):
     def test_exact_numeric_counts_contexts_quantiles_and_zero_baseline(self):
         self.prepare([resource('Patient', 'p')] + [observation(str(i), Decimal(v)) for i, v in enumerate(['0.00','10.00','10.00','20.00'])])
         self.run_engine()
-        contexts = self.report['numeric_contexts']
+        contexts = self.numeric_contexts
         self.assertEqual(len(contexts), 1)
         c = contexts[0]
         self.assertEqual(c['samples'], 4); self.assertEqual(c['zero_baselines'], 1)
@@ -480,9 +487,9 @@ class PerturbationTests(unittest.TestCase):
         obs[-1]['code']['coding'][0]['code'] = 'different'
         self.prepare([resource('Patient', 'p')] + obs)
         self.run_engine()
-        self.assertEqual(len(self.report['numeric_contexts']), 2)
+        self.assertEqual(len(self.numeric_contexts), 2)
         self.assertEqual(self.db.execute("SELECT sum(frequency) FROM numeric_frequencies WHERE phase='after'").fetchone()[0], 160)
-        self.assertEqual(sum(c['samples'] for c in self.report['numeric_contexts']), 160)
+        self.assertEqual(sum(c['samples'] for c in self.numeric_contexts), 160)
 
     def test_medication_doses_and_panel_components_keep_distinct_contexts(self):
         resources = [resource('Patient', 'p')]
@@ -496,8 +503,31 @@ class PerturbationTests(unittest.TestCase):
                     'code': {'coding': [{'code': 'same-component'}]}, 'valueQuantity': quantity(Decimal('10.000'))}]))
         self.prepare(resources)
         self.run_engine()
-        self.assertEqual(len(self.report['numeric_contexts']), 4)
-        self.assertTrue(all(c['samples'] == 1 for c in self.report['numeric_contexts']))
+        self.assertEqual(len(self.numeric_contexts), 4)
+        self.assertTrue(all(c['samples'] == 1 for c in self.numeric_contexts))
+
+    def test_report_excludes_numeric_summaries_even_for_singleton_measurements(self):
+        source_value = Decimal('12345.67890123456789')
+        self.prepare([resource('Patient', 'p'), observation('only-measurement', source_value)])
+        self.run_engine()
+        report_text = (self.output / 'perturbation-report.json').read_text()
+        forbidden = {'numeric_contexts', 'statistics', 'before', 'after', 'relative',
+                     'absolute_relative', 'minimum', 'maximum', 'quantiles',
+                     'settings', 'privacy_guarantee', 'limitations'}
+        pending = [self.report]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, dict):
+                self.assertFalse(forbidden.intersection(value))
+                pending.extend(value.values())
+            elif isinstance(value, list):
+                pending.extend(value)
+        self.assertNotIn(str(source_value), report_text)
+        self.assertEqual(self.report['counts']['root_resources'], 2)
+        self.assertTrue(self.report['fields'])
+        self.assertEqual(self.report['validation']['quantities_checked'], 1)
+        # Full precision is retained locally for verification and investigation.
+        self.assertEqual(self.numeric_contexts[0]['statistics']['before']['minimum'], source_value)
 
     def test_deterministic_inputs_unchanged_and_private_outputs(self):
         self.prepare([resource('Patient', 'p', birthDate='1980-01-01'), observation('o', Decimal('10.000'))])

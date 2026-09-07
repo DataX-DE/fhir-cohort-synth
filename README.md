@@ -39,7 +39,7 @@ new-output/
       MimicObservationED.ndjson.gz
       ...
     perturbation-state.sqlite      # Identity maps, parameters and recorded edits
-    perturbation-report.json       # Coverage and actual before/after changes
+    perturbation-report.json       # Coverage counts and validation results
 ```
 
 `run.json` is complete only after both stages finish, including output checks
@@ -56,12 +56,12 @@ and use one `.ndjson` file per source Bundle; their envelopes are not rebuilt.
 Deduplicated roots stay in their first source file. The report's `export` section
 lists every output file, record count and checksum of its decompressed content.
 
-Defaults are **an independent 1–10% increase or decrease per eligible quantity,
+Defaults are **an independent 1–16% increase or decrease per eligible quantity,
 ±30 days per patient and seed 42**. To change the upper percentage bound:
 
 ```sh
 python3 fhir_synth.py run --input /path/to/fhir-export --output /path/to/new-output \
-  --strength 0.10 --date-shift-days 30 --seed 42
+  --strength 0.16 --date-shift-days 30 --seed 42
 ```
 
 Each quantity occurrence draws its own magnitude and a 50/50 sign; repeated
@@ -83,13 +83,14 @@ python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output loca
 python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output local-data/perturbed
 ```
 
-The API is `perturb(cohort_db, output_dir, *, strength=0.10, date_shift_days=30, seed=42)`.
+The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, seed=42)`.
 The earlier `field_db` argument and CLI `--fields` option have been removed.
 There is no cross-database matching step because perturbation now has one input.
 The ingestion database still must be completed, supported and readable.
 
-The perturbation report includes measurement-context before/after statistics
-and transformation coverage. The full-field `profile` command and its separate
+The perturbation report includes transformation coverage and validation counts.
+Numeric distributions, before/after values and percentage-change summaries stay
+in the local SQLite database. The full-field `profile` command and its separate
 extraction database have been removed.
 No independent cohort sampler or `generate` command is present.
 

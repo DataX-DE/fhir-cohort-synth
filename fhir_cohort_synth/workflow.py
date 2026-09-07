@@ -17,11 +17,11 @@ def _write_status(output, status, phase):
     partial.replace(output / 'run.json')
 
 
-def run_export(inputs, output_dir, *, strength=0.10, date_shift_days=30, seed=42, base_url=None):
+def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, seed=42, base_url=None):
     """Run both stages in a fresh directory and return the perturbation summary.
 
     index/ contains the original source index and ingestion reports.
-    perturbed/ contains the export, change ledger and before/after report.
+    perturbed/ contains the export, local change ledger and coverage report.
     Validate paths/options before creating anything. Later failures retain
     partial work for inspection, and a retry always needs a new destination.
     """

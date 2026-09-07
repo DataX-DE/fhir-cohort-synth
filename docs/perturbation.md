@@ -12,7 +12,7 @@ outputs stay local; the result has no privacy or anonymization guarantee.
 python3 fhir_synth.py run \
   --input examples/mii-demo-bundle.json \
   --output local-data/demo \
-  --strength 0.10 --date-shift-days 30 --seed 42
+  --strength 0.16 --date-shift-days 30 --seed 42
 ```
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
@@ -34,7 +34,7 @@ from fhir_cohort_synth.perturbation import perturb
 summary = perturb(
     "local-data/demo/index/cohort.sqlite",
     "local-data/another-perturbed-run",
-    strength=0.10, date_shift_days=30, seed=42,
+    strength=0.16, date_shift_days=30, seed=42,
 )
 ```
 
@@ -47,7 +47,7 @@ runs. Reordering/re-ingesting an export can change its snapshot identities, so
 determinism is defined for the same indexed snapshot.
 
 Each eligible quantity occurrence independently draws a magnitude uniformly
-between 1% and `strength` (default 10%), and an increase/decrease with equal
+between 1% and `strength` (default 16%), and an increase/decrease with equal
 probability. For example, `100.00` with a 4% increase becomes `104.00`; another
 occurrence with a 7% decrease becomes `93.00`. The seed, prepared root identity
 and concrete field path determine its draw, including individual array positions.
@@ -161,17 +161,18 @@ exactly as supplied.
   provenance, identity maps, patient parameters, exact changes, action counts,
   numeric frequencies and run status. It contains original source values.
 - `perturbation-report.json`: coverage by root resource type and normalized
-  field path, original warning counts, before/after numeric summaries and
-  actual relative changes, including unchanged numeric values. It omits source
-  clinical string examples; exact context coding/unit values are in the local
-  database. The `export` section lists source-relative filenames, record counts
+  field path, original warning counts and validation results. Numeric values,
+  distributions, ranges, quantiles and percentage-change summaries are excluded;
+  these remain in the local SQLite database along with context coding/unit values.
+  The `export` section lists source-relative filenames, record counts
   and decompressed checksums. Filename collisions fail before creating output.
 
 Each object, array and scalar has an action count; these counts are not the
-number of resources. Numeric contexts include preserved numeric fields as well
-as eligible quantities. Their summaries contain sample count, minimum, maximum
-and weighted nearest-rank percentiles at 5, 25, 50, 75 and 95 percent. Exact value
-frequencies live in SQLite, with decimals stored as text and ordered numerically.
+number of resources. Local SQLite numeric contexts include preserved numeric
+fields as well as eligible quantities. Their summaries contain sample count, minimum, maximum
+and weighted nearest-rank percentiles at 5, 25, 50, 75 and 95 percent. These summaries
+and exact value frequencies are not exported to JSON. Decimals are stored as text
+and ordered numerically in SQLite.
 
 The validator reads the emitted NDJSON afresh, checks replacement identities
 and reference targets, reproduces each changed quantity's percentage draw, and
@@ -190,7 +191,7 @@ count deduplicated roots once, independently of how many source files exist.
 This proves the specified transformations and preservation properties. It does
 not establish every clinical dependency, full FHIR conformance or unchanged
 cohort distributions. Independent numeric changes can alter ratios, measurement
-trends and aggregate statistics; before/after summaries measure the actual effects.
+trends and aggregate statistics; local SQLite summaries measure the actual effects.
 No categorical randomization, trajectory generation or privacy certification
 is performed. Narrative, attachments and other source text remain present.
 

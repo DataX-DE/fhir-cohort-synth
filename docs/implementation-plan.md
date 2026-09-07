@@ -8,12 +8,12 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
 
 1. Ingest local FHIR JSON/NDJSON exports, preserve payloads, resolve references
    and determine patient membership.
-2. Run `perturb` using bundled FHIR R4 datatype definitions, independent 1–10%
+2. Run `perturb` using bundled FHIR R4 datatype definitions, independent 1–16%
    increases/decreases per eligible quantity, a shared date offset per patient,
    and consistent identity replacement.
 3. Validate the written resource population, preserved content, resolved graph
-   and use of field-specific numeric draws and patient date offsets. Report numeric changes after
-   rounding, unchanged cases and unsupported fields.
+   and use of field-specific numeric draws and patient date offsets. Report
+   coverage counts and validation results; keep numeric summaries in local SQLite.
 4. Run ingestion and perturbation together with `run --input ... --output ...`.
    The hospital does not need to manage stage inputs.
 5. Publish source-named export files with their NDJSON/JSONL and gzip formats,
@@ -25,7 +25,7 @@ and SQLite, with no runtime downloads or model training.
 
 The full-field profiler, configured relationship-grouping API and conditional
 statistics command have been removed. Perturbation uses the ingestion reference graph directly;
-its automatic measurement contexts still separate before/after numeric reports.
+its automatic measurement contexts still separate local SQLite numeric summaries.
 Ingestion schema 2 also removes the profile, extension, measurement and version
 inventories, hospital-scope classification and archived Bundle metadata.
 Reference contexts and source resource JSON remain. Perturbation accepts both
@@ -44,7 +44,7 @@ outputs remain records of their original runs; no migration is performed.
   unsupported dates remain unchanged. Intervals involving unchanged dates or
   different patients are outside this guarantee.
 - Independent quantity changes can alter ratios, series shape and cohort
-  distributions. The report measures the resulting numeric changes.
+  distributions. The local state database measures the resulting numeric changes.
 - No categorical randomization, trajectory sampling, full FHIR validation or
   hospital-specific profile validation is included in the runtime commands.
 
