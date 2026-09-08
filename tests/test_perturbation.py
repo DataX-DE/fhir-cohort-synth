@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal, localcontext
 import hashlib
 import io
+import os
 from pathlib import Path
 import shutil
 import sqlite3
@@ -543,9 +544,12 @@ class PerturbationTests(unittest.TestCase):
         perturb(self.cohort, second, reuse_key_from=self.output / 'intermediates/perturbation-state.sqlite')
         self.assertEqual((self.output/'result/fhir/source.ndjson').read_bytes(), (second/'result/fhir/source.ndjson').read_bytes())
         self.assertEqual(before, hashlib.sha256(self.cohort.read_bytes()).hexdigest())
-        self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
-        for name in ('result/fhir/source.ndjson', 'intermediates/perturbation-state.sqlite', 'result/reports/perturbation-report.json'):
-            self.assertEqual((self.output/name).stat().st_mode & 0o777, 0o600)
+        # Windows uses destination ACLs; its stat() mode is not a POSIX access
+        # check. Keep the reproduction and unchanged-input checks on every OS.
+        if os.name != 'nt':
+            self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
+            for name in ('result/fhir/source.ndjson', 'intermediates/perturbation-state.sqlite', 'result/reports/perturbation-report.json'):
+                self.assertEqual((self.output/name).stat().st_mode & 0o777, 0o600)
         self.assertFalse(list(self.output.rglob('*-wal')))
 
     def test_zero_strength_and_date_range_still_replace_identity(self):
