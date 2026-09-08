@@ -5,11 +5,9 @@ The build produces `fhir-cohort-synth-<version>-windows-x64.zip` and
 Each archive contains the executable, `_internal/` runtime folder, quick-start
 guide, invented FHIR example, build information and component notices.
 
-The hospital extracts the entire archive and runs the executable with `run
---input ... --output ...`. Python, pip, SQLite installation and internet access
-are unnecessary. CLI options, transformations, progress and output layout are
-the same as the source version. The executable is the launcher; there is no
-installer or second configuration layer.
+The hospital runs the executable with `run --input ... --output ...`.
+CLI options, transformations, progress and output layout are the same as the
+source version.
 
 ## Build and checks
 
@@ -69,6 +67,5 @@ Linux builds depend on the build machine's glibc baseline.
 [PyInstaller platform guidance](https://pyinstaller.org/en/stable/usage.html#making-gnu-linux-apps-forward-compatible)
 
 The executable is currently unsigned. Signing can be added when a certificate
-and the hospital's deployment requirements are available. Do not remove runtime
-files from `_internal/`. A fresh key still produces different exports; packaging
-does not change the existing reproduction API.
+and the hospital's deployment requirements are available. Packaging does not
+change the existing reproduction API.

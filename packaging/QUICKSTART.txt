@@ -1,10 +1,6 @@
 FHIR cohort synth
 ================
 
-Extract the entire archive before running it. Keep the executable and _internal
-folder together. Python, SQLite and the FHIR R4 definitions are included.
-No installation, administrator access or internet connection is needed to run.
-
 Windows x64 (PowerShell)
 -----------------------
 Open PowerShell in the extracted folder:
@@ -45,15 +41,3 @@ Your output
   intermediates/       Ingestion database, transformation state and run status
   result/fhir/         Perturbed FHIR files, retaining source file organization
   result/reports/      Processing reports
-
-After completion, copy result/ to collect the FHIR export and reports together.
-Source Bundle resources are unpacked into NDJSON files.
-
-The defaults are independent signed 1-16% changes to supported quantities,
-one date shift of up to 30 days per patient, and replacement identity fields.
-Values with missing or unsupported units are preserved along with their units.
-
-Help: use --help or run --help after the executable name.
-Version: use --version after the executable name.
-Exit codes: 0 completed (possibly with warnings), 2 error, 130 interrupted.
-Build information is in build-info.json. Component notices are in licenses/.
