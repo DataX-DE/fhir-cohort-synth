@@ -31,7 +31,8 @@ def file_hash(path):
 
 def run(executable, cwd, *arguments, expected=0):
     environment = os.environ.copy()
-    environment['PATH'] = str(Path(environment['SystemRoot']) / 'System32') if os.name == 'nt' else '/nonexistent'
+    # os.environ is case-insensitive on Windows; its copied plain dict is not.
+    environment['PATH'] = str(Path(os.environ['SystemRoot']) / 'System32') if os.name == 'nt' else '/nonexistent'
     environment['PYTHONHOME'] = environment['PYTHONPATH'] = str(cwd / 'no-external-python')
     environment.pop('VIRTUAL_ENV', None)
     result = subprocess.run([str(executable), *map(str, arguments)], cwd=cwd,
