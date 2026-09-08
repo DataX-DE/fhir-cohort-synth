@@ -1,79 +1,27 @@
 FHIR cohort synth
 ================
 
-Expected input
---------------
-Provide a FHIR R4 (4.0.1) export saved as UTF-8 JSON. The --input path can be
-one file or a folder. All supported files in its subfolders are included.
+Input
+-----
+A file or folder containing a FHIR R4 (4.0.1) export in UTF-8 JSON.
+- .json: one FHIR resource or Bundle.
+- .ndjson/.jsonl: one complete resource per line.
+- Gzip (.gz) files and subfolders are supported.
+Include patients and linked resources, keeping their original IDs and references.
 
-Supported file formats:
-  .json                 One FHIR resource object or a FHIR Bundle object.
-                        Each Bundle entry must contain its resource in
-                        entry[].resource.
-  .ndjson or .jsonl      One complete FHIR resource object per line.
-  .json.gz              Gzip-compressed JSON.
-  .ndjson.gz/.jsonl.gz   Gzip-compressed line-delimited JSON.
-
-Each resource must have a resourceType field, such as "Patient", "Encounter"
-or "Observation". Keep the original nested fields, resource IDs, references
-and Bundle entry.fullUrl values.
-
-Include the patients and their linked resources together in the input export.
-Resource types can be split across files; no particular filenames or file order
-are required. For example:
-
-  FHIR export/
-    Patient.ndjson
-    Encounter.ndjson
-    Observation.ndjson.gz
-    other-resources/
-      Condition.jsonl
-
-Use a single export snapshot. For a paginated export, include all downloaded
-pages; the tool does not download resources from links. History Bundles are
-not supported. Keep unrelated JSON files outside the input folder.
-
-XML, CSV and a top-level JSON array of resources are not supported. Extract
-ZIP or TAR exports first, then pass the extracted folder; gzip files can be
-read directly.
-
-Windows x64 (PowerShell)
------------------------
-Open PowerShell in the extracted folder:
-
+Run from the package folder
+---------------------------
+Windows x64 (PowerShell):
   .\fhir-cohort-synth.exe run --input "C:\FHIR export" --output "C:\FHIR output"
 
-Linux x64
----------
-Extract with: tar -xzf fhir-cohort-synth-<version>-linux-x64.tar.gz
-Open a terminal in the extracted folder:
-
+Linux x64 (glibc 2.35+):
   ./fhir-cohort-synth run --input "/data/FHIR export" --output "/data/FHIR output"
 
-This Linux build targets glibc 2.35 or newer, such as Ubuntu 22.04 or newer.
-It does not target Alpine Linux or ARM processors.
-Windows builds target 64-bit Windows 10/11 and Windows Server 2022 or newer.
+Replace the paths above. The output folder must be new and outside the input.
+Progress appears in the terminal. Wait for the final completion message.
 
-Try the included invented example
---------------------------------
-Windows:
-  .\fhir-cohort-synth.exe run --input examples\mii-demo-bundle.json --output example-output
-Linux:
-  ./fhir-cohort-synth run --input examples/mii-demo-bundle.json --output example-output
-
-The output folder must be new and outside the input folder. For another run,
-choose a new name, such as example-output-2. Existing results are never replaced.
-Quote paths containing spaces.
-
-While it runs
--------------
-The terminal shows the current stage, elapsed time and processed counts.
-Long stages repeat an update about every 10 seconds. Percentages describe the
-current stage. Wait for the final completion message before using the output.
-Ctrl+C stops the run. After interruption or failure, retry with a new output path.
-
-Your output
------------
-  intermediates/       Ingestion database, transformation state and run status
-  result/fhir/         Perturbed FHIR files, retaining source file organization
-  result/reports/      Processing reports
+Output
+------
+  result/fhir/       Perturbed FHIR files
+  result/reports/    Reports
+  intermediates/     Databases and processing state
