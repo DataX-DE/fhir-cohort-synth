@@ -127,15 +127,19 @@ full FHIR or hospital-profile validation.
 | Resolved literal references | Rewrite to `ResourceType/new-id` or `#new-id` for contained targets |
 | Local canonical fragments, e.g. `answerValueSet: "#choices"` | Rewrite to the same contained target's new ID; preserve external canonical URLs |
 | `Identifier.value` | Replace deterministically using its system and original value; preserve type/system |
-| `HumanName.text`, `family`, `given`, `prefix`, `suffix` | Replace nonempty existing strings with deterministic dummy labels |
+| `HumanName.text`, `family`, `given`, `prefix`, `suffix` | Replace nonempty strings with keyed 16-character alphanumeric labels; no `Dummy-` prefix |
+| `ContactPoint.value` | Replace phone/fax/pager/SMS with generated digits, email/URL with generated `.invalid` addresses, and other systems with alphanumeric labels |
+| `Address.text`, `line`, `city`, `district`, `state`, `postalCode`, `country` | Replace nonempty strings with keyed 16-character alphanumeric labels |
 | Codes, codings, booleans, other strings | Preserve |
-| Narrative, attachments, unknown extension contents | Preserve and report |
+| Narrative, attachments, other unknown extension contents | Preserve and report |
 | Unknown fields/resource types | Preserve and report unsupported handling |
-| Inline resources outside containment, e.g. `Parameters.parameter.resource` | Preserve the complete subtree and report unsupported identity/ownership handling |
+| Inline resources outside containment, e.g. `Parameters.parameter.resource` | Replace recognized name/contact/address fields; preserve other content and report unsupported identity/ownership handling |
 
 An indexed identity or resolved reference is remapped even inside otherwise
 preserved content. This precedence preserves graph targets, including a
-`valueReference` in an unknown extension. Other extension contents stay unchanged.
+`valueReference` in an unknown extension. Recognized `HumanName`, `Address` and
+`ContactPoint` text fields are also replaced inside extensions and inline resources.
+Other extension contents stay unchanged.
 References that originally failed to resolve, were ambiguous, or resolved
 differently across duplicate occurrences are preserved with warnings. Logical
 references are not resolved by guessing; their Identifier values follow the
@@ -164,6 +168,25 @@ and unit. Reference contexts use the original source literals; equivalent
 spellings can remain separate because clinical normalization is outside scope.
 
 Empty strings, explicit nulls, empty containers and missing fields are retained.
+Contact details are replaced, not deleted: object keys, array lengths and positions
+stay intact. Name `use`, address `use`/`type`, and contact `system`/`use`/`rank`
+remain unchanged; periods follow the existing date rules. Repeated original values
+use consistent keyed replacements. Address strings remain FHIR strings; generated
+postal codes/countries are placeholders, not validated geographic codes.
+
+For example, the following illustrates the replacement format (actual tokens
+depend on the run key):
+
+```json
+{
+  "name": [{"family": "8ae41fd927c5b603", "given": ["e73a10b64fd829c5"]}],
+  "telecom": [
+    {"system": "phone", "value": "0001234567890"},
+    {"system": "email", "value": "c39e18a704b62fd5@example.invalid"}
+  ],
+  "address": [{"line": ["d41e9b3c076af825"], "city": "90c5e24fd6b738a1"}]
+}
+```
 
 Decimal arithmetic rounds half-even to the original represented precision:
 `100.00` keeps two decimal places and an integer JSON token remains an integer.
@@ -233,7 +256,8 @@ and exact value frequencies are not exported to JSON. Decimals are stored as tex
 and ordered numerically in SQLite.
 
 The validator reads the emitted NDJSON afresh, checks replacement identities
-and reference targets, reads the stored key to reproduce each changed quantity's
+and reference targets, reads the stored key to reproduce name/contact/address
+replacements and each changed quantity's
 percentage draw, and reproduces every patient's date offset. Undoing the recorded changes must reproduce
 every source root's digest.
 This verifies that codes, booleans, arrays, empty/missing fields, unknown content

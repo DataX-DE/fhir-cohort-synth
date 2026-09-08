@@ -287,7 +287,8 @@ class PerturbationTests(unittest.TestCase):
         self.assertEqual(result[0]['gender'], 'female'); self.assertIs(result[0]['active'], True)
         self.assertEqual(result[0]['name'][0]['use'], 'official')
         self.assertEqual(len(result[0]['name'][0]['given']), 2)
-        self.assertTrue(all(v.startswith('Dummy-') for v in result[0]['name'][0]['given']))
+        for value in result[0]['name'][0]['given']:
+            self.assertRegex(value, r'^[a-f0-9]{16}$')
         self.assertEqual(result[0]['text'], p['text'])
         self.assertEqual(result[0]['identifier'], result[1]['identifier'])
         self.assertNotIn('SENSITIVE-EXAMPLE', (self.output/'result/reports/perturbation-report.json').read_text())
@@ -355,28 +356,31 @@ class PerturbationTests(unittest.TestCase):
         with closing(sqlite3.connect(self.cohort)) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM resource_references').fetchone()[0], 5)
 
-    def test_parameters_inline_resources_are_explicitly_preserved(self):
-        # Inline Resources need a separate ownership/reference scope, which the
-        # current index does not provide. Never partially transform their names
-        # while leaving their own identities and links unmanaged.
+    def test_parameters_inline_identity_and_dates_are_preserved(self):
+        # Contact/name replacements do not require patient ownership. Inline
+        # identities, references and dates still need a separate indexing scope.
         inline = resource('Patient', 'inline', name=[{'family': 'Invented'}], birthDate='1980-01-01',
                           managingOrganization={'reference': 'Organization/org'})
         self.prepare([resource('Parameters', 'parameters', parameter=[{'name': 'patient', 'resource': inline}]),
                       resource('Organization', 'org')])
         result = self.run_engine()
-        self.assertEqual(result[0]['parameter'][0]['resource'], inline)
+        output_inline = result[0]['parameter'][0]['resource']
+        self.assertRegex(output_inline['name'][0]['family'], r'^[a-f0-9]{16}$')
+        self.assertEqual({**output_inline, 'name': inline['name']}, inline)
         self.assertNotEqual(result[0]['id'], 'parameters')
         self.assertGreater(self.db.execute("SELECT sum(frequency) FROM field_actions WHERE reason='embedded_resource_preserved'").fetchone()[0], 0)
         with closing(sqlite3.connect(self.cohort)) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM resource_references').fetchone()[0], 0)
 
-    def test_inline_resource_inside_contained_parameters_is_also_preserved(self):
+    def test_inline_resource_inside_contained_parameters_replaces_names(self):
         inline = resource('Patient', 'inline', name=[{'family': 'Invented'}], birthDate='1980-01-01')
         parameters = resource('Parameters', 'params', parameter=[{'name': 'patient', 'resource': inline}])
         self.prepare([resource('Patient', 'p', contained=[parameters], extension=[{
             'url': 'urn:invented', 'valueReference': {'reference': '#params'}}])])
         result = self.run_engine()[0]
-        self.assertEqual(result['contained'][0]['parameter'][0]['resource'], inline)
+        output_inline = result['contained'][0]['parameter'][0]['resource']
+        self.assertRegex(output_inline['name'][0]['family'], r'^[a-f0-9]{16}$')
+        self.assertEqual({**output_inline, 'name': inline['name']}, inline)
         self.assertNotEqual(result['contained'][0]['id'], 'params')
 
     def test_legacy_index_uri_edge_cannot_rewrite_a_non_reference(self):

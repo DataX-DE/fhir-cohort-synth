@@ -2,8 +2,8 @@
 
 The bundled index is derived from official StructureDefinition snapshots.
 For example Observation.component is a backbone in Observation's snapshot,
-while its valueQuantity switches to the Quantity snapshot. Unknown extension
-contents remain opaque even when their JSON happens to resemble a known type.
+while its valueQuantity switches to the Quantity snapshot. Extensions carry a
+preservation reason; handlers explicitly override it for recognized personal fields.
 """
 from dataclasses import dataclass
 from functools import lru_cache

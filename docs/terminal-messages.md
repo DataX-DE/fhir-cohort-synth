@@ -173,6 +173,7 @@ key-reuse reasons that cannot normally be triggered by the fixed-default CLI.
 | Output identity or resource type does not match the prepared map. | [perturbation.py:346](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:346) |
 | Output differs from its recorded change ledger. | [perturbation.py:354](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:354) |
 | Output quantity does not match its field-specific percentage change. | [perturbation.py:360](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:360) |
+| Output personal field does not match its keyed replacement. | [perturbation.py:382](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:382) |
 | Output date does not use its shared patient offset. | [perturbation.py:364](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:364) |
 | Output reference target or ownership changed. | [perturbation.py:370](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:370) |
 | Unrecorded resource content or structure changed. | [perturbation.py:378](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:378) |
@@ -276,7 +277,7 @@ options:
 ### `python3 fhir_synth.py --version`
 
 ```text
-0.1.0
+0.1.1
 ```
 
 ## 6. Argument-parser errors

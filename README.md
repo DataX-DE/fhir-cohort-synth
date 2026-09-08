@@ -81,8 +81,10 @@ fractional change, with a fixed 1% minimum; `0` disables numeric changes.
 Each patient still shares one date offset. A fresh 32-byte key controls all
 generated identities, names, identifiers, numeric draws and date offsets. It is
 stored only in the hospital's local state database. Decimal rounding can leave small
-changes unchanged. IDs and resolved references are replaced consistently;
-clinical codes, booleans, narratives, attachments and unsupported fields remain
+changes unchanged. IDs and resolved references are replaced consistently.
+Names and address text use alphanumeric labels; phone numbers and emails receive
+generated replacements. These fields keep their original structure and are not deleted.
+Clinical codes, booleans, narratives, attachments and unsupported fields remain
 unchanged. Shared or unassigned resources retain their quantities and dates.
 See [field handling and examples](docs/perturbation.md) for the exact rules.
 

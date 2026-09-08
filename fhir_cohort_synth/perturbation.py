@@ -21,7 +21,7 @@ from .export_files import plan_files, write_source_files
 from .ingest import InputError
 from .cohort import open_source, source_fingerprint
 from .jsonio import dumps, loads
-from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patient_days, quantity_factor, scale, shift_date
+from .perturbation_handlers import DATE_TYPES, Handlers, contact_value, full_date, label, patient_days, quantity_factor, scale, shift_date
 from .perturbation_store import Ledger, read_reuse_key
 from .perturbation_report import build_report, write_report
 from .randomness import ALGORITHM, new_key, valid_key
@@ -369,6 +369,17 @@ def _validate(ledger, destination, *, progress=None, total=None):
                     if after != expected or (after.startswith('#') and target['root_id'] != root['root_id']):
                         raise PerturbationError('Output reference target or ownership changed.')
                     counts['references_checked'] += 1
+                elif change['reason'] in {'name_replaced', 'address_replaced', 'contact_point_replaced'}:
+                    # Verify generated personal fields with the stored key too.
+                    # Metadata such as ContactPoint.system is preserved.
+                    if change['reason'] == 'contact_point_replaced':
+                        expected = contact_value(run_key, parent.get('system'), before)
+                    else:
+                        text_key = key if isinstance(key, str) else path[-2][1]
+                        purpose = 'name-' if change['reason'] == 'name_replaced' else 'address-'
+                        expected = label(run_key, purpose + text_key, before)[:16]
+                    if after != expected:
+                        raise PerturbationError('Output personal field does not match its keyed replacement.')
                 if change['old_present']:
                     parent[key] = before
                 else:

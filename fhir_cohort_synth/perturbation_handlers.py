@@ -17,6 +17,7 @@ from .randomness import label, randbelow
 
 DATE_TYPES = {'date', 'dateTime', 'instant'}
 NAME_FIELDS = {'text', 'family', 'given', 'prefix', 'suffix'}
+ADDRESS_FIELDS = {'text', 'line', 'city', 'district', 'state', 'postalCode', 'country'}
 STAMP = re.compile(r'^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$')
 
 
@@ -83,6 +84,24 @@ def patient_days(run_key, identity, low, high):
     return low + randbelow(run_key, 'date-offset', identity, high - low + 1)
 
 
+def contact_value(run_key, system, value):
+    """Replace contact values consistently while keeping their FHIR string type.
+
+    Phone-like contacts get generated digits. Email and web contacts use .invalid
+    addresses. Unknown/missing systems get an alphanumeric label. The system and
+    original value are part of the keyed input, so repeated contacts agree.
+    """
+    identity = [system, value]
+    if isinstance(system, str) and system in {'phone', 'fax', 'pager', 'sms'}:
+        return '000' + str(randbelow(run_key, 'contact-number', identity, 10**10)).zfill(10)
+    token = label(run_key, 'contact-point', identity)[:16]
+    if system == 'email':
+        return token + '@example.invalid'
+    if system == 'url':
+        return 'https://example.invalid/' + token
+    return token
+
+
 def scale(value, factor):
     """Multiply and round to the input's represented precision using half-even.
 
@@ -139,11 +158,26 @@ class Handlers:
     def apply(self, field, root_identity, patient_assigned, days):
         """Return (replacement, action, reason) without changing the input tree.
 
-        Check preservation rules first, then identities, dates and quantities.
+        Replace recognized personal fields, then apply the other datatype rules.
         patient_assigned is false when no unique patient owns the resource. An
         'unsupported' action also preserves the value, but records a limitation.
         """
         value = field.value
+        # Use the existing run key for repeatable contact/name replacements.
+        # Recognized datatypes also apply inside extensions/inline resources;
+        # a field merely named 'name' does not establish this datatype.
+        text_key = field.key
+        if isinstance(text_key, int) and len(field.path) >= 2:
+            # HumanName.given[0] and Address.line[0] inherit their field name.
+            text_key = field.path[-2][1]
+        if isinstance(value, str) and value:
+            if field.parent_type == 'HumanName' and text_key in NAME_FIELDS:
+                return label(self.run_key, 'name-' + text_key, value)[:16], 'changed', 'name_replaced'
+            if field.parent_type == 'Address' and text_key in ADDRESS_FIELDS:
+                return label(self.run_key, 'address-' + text_key, value)[:16], 'changed', 'address_replaced'
+            if field.parent_type == 'ContactPoint' and field.key == 'value':
+                result = contact_value(self.run_key, field.parent.get('system'), value)
+                return result, 'changed', 'contact_point_replaced'
         if field.reason:
             unsupported = field.reason.startswith('unknown') or field.reason == 'embedded_resource_preserved'
             action = 'unsupported' if unsupported else 'preserved'
@@ -166,11 +200,6 @@ class Handlers:
             else:
                 result = 'pert-' + token
             return result, 'changed', 'identifier_replaced'
-        # HumanName.given is an array: its scalar has an integer key. Recover
-        # 'given' from the preceding path segment instead of treating 0 as a name.
-        name_key = field.key if isinstance(field.key, str) else field.path[-2][1]
-        if field.parent_type == 'HumanName' and name_key in NAME_FIELDS and isinstance(value, str):
-            return 'Dummy-' + label(self.run_key, 'name-' + name_key, value)[:16], 'changed', 'name_replaced'
         if field.datatype in DATE_TYPES:
             parsed, reason = full_date(value, field.datatype)
             if parsed is None:

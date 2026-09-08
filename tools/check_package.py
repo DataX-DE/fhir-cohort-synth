@@ -21,6 +21,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from fhir_cohort_synth import __version__
+from fhir_cohort_synth.export_files import iter_export_lines
 from fhir_cohort_synth.perturbation import perturb
 
 
@@ -80,6 +81,13 @@ def check(archive):
         inputs = cwd / 'FHIR input ä'
         inputs.mkdir()
         resources = [entry['resource'] for entry in json.loads(example.read_text(encoding='utf-8'))['entry']]
+        # Exercise contact replacements in the actual executable, not just the
+        # source tests. The example file bundled for the hospital stays intact.
+        for resource in resources:
+            if resource['resourceType'] == 'Patient':
+                resource['telecom'] = [{'system': 'email', 'value': 'invented@example.invalid'},
+                                       {'system': 'phone', 'value': '000000000'}]
+                resource['address'] = [{'line': ['123 Fictional Lane'], 'city': 'Example City'}]
         for patient, name in ((False, 'a events.ndjson.gz'), (True, 'z patients.ndjson.gz')):
             with gzip.open(inputs / name, 'wt', encoding='utf-8') as stream:
                 for resource in resources:
@@ -88,6 +96,16 @@ def check(archive):
         before = {path.name: file_hash(path) for path in inputs.iterdir()}
         frozen = cwd / 'gzip output'
         run(executable, cwd, 'run', '--input', inputs, '--output', frozen)
+        for line in iter_export_lines(frozen):
+            resource = json.loads(line)
+            if resource['resourceType'] == 'Patient':
+                assert resource['telecom'][0]['value'].endswith('@example.invalid')
+                assert resource['telecom'][0]['value'] != 'invented@example.invalid'
+                assert resource['telecom'][1]['value'].isdigit() and len(resource['telecom'][1]['value']) == 13
+                assert resource['address'][0]['line'][0].isalnum() and len(resource['address'][0]['line'][0]) == 16
+                for name in resource.get('name', []):
+                    for value in name.get('given', []) + ([name['family']] if name.get('family') else []):
+                        assert value.isalnum() and len(value) == 16
         # Reuse the frozen run's key through the existing Python API. Matching
         # compressed bytes proves bundling has not changed the transformations.
         replay = cwd / 'API replay'

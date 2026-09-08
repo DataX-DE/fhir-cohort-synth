@@ -210,7 +210,7 @@ class RunKeyTests(unittest.TestCase):
 
     def test_validation_reads_the_stored_key_and_rechecks_date_draws(self):
         original = engine._write
-        for change, expected in [('key', 'field-specific percentage'), ('date', 'date offset')]:
+        for change, expected in [('key', 'keyed replacement'), ('date', 'date offset')]:
             def corrupt(*args, **kwargs):
                 original(*args, **kwargs)
                 db = args[1].db
