@@ -3,18 +3,22 @@ FHIR cohort synth
 
 Input
 -----
-A file or folder containing a FHIR R4 (4.0.1) export in UTF-8 JSON.
-- .json: one FHIR resource or Bundle.
+Standard FHIR R4 (4.0.1) JSON exports are supported. Supply a UTF-8 file or folder.
+- .json: a single resource or Bundle, such as collection or searchset.
 - .ndjson/.jsonl: one complete resource per line.
 - Gzip (.gz) files and subfolders are supported.
 Include patients and linked resources, keeping their original IDs and references.
+XML exports and history Bundles are not supported.
 
 Run from the package folder
 ---------------------------
 Windows x64 (PowerShell):
   .\fhir-cohort-synth.exe run --input "C:\FHIR export" --output "C:\FHIR output"
 
-Linux x64 (glibc 2.35+):
+Linux x64:
+Requires x86_64 Linux with system glibc 2.35+ (for example, Ubuntu 22.04+).
+Python, SQLite and the application libraries are bundled; no pip installs needed.
+Alpine/musl and ARM are not supported by this package.
   ./fhir-cohort-synth run --input "/data/FHIR export" --output "/data/FHIR output"
 
 Replace the paths above. The output folder must be new and outside the input.

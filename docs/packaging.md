@@ -61,6 +61,8 @@ a developer option; the hospital CLI still exposes only input/output paths.
 - Linux x64: glibc 2.35 or newer; built and tested on Ubuntu 22.04, also tested
   in a clean Ubuntu 22.04 container. ARM, Alpine/musl and older glibc require
   separate builds. Linux uses tar to preserve runtime symlinks and permissions.
+  The OS supplies glibc and its dynamic loader. Python, SQLite and the other
+  application libraries are bundled; pip installation is not required to run.
 
 Native builds are required because PyInstaller is not a cross-compiler.
 Linux builds depend on the build machine's glibc baseline.
