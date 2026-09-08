@@ -85,6 +85,7 @@ def check(archive):
         # source tests. The example file bundled for the hospital stays intact.
         for resource in resources:
             if resource['resourceType'] == 'Patient':
+                resource['name'] = [{'family': 'Example', 'given': ['Invented Alex']}]
                 resource['telecom'] = [{'system': 'email', 'value': 'invented@example.invalid'},
                                        {'system': 'phone', 'value': '000000000'}]
                 resource['address'] = [{'line': ['123 Fictional Lane'], 'city': 'Example City'}]
