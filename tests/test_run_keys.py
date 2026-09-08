@@ -188,7 +188,7 @@ class RunKeyTests(unittest.TestCase):
     def test_interruption_retains_committed_key_and_cannot_be_reused(self):
         output = self.root / 'interrupted'
 
-        def interrupt(*args):
+        def interrupt(*args, **kwargs):
             # A separate connection can see the key before any export is written.
             self.assertEqual(self.state(output)['run_key'], KEY_A)
             raise KeyboardInterrupt()
@@ -211,8 +211,8 @@ class RunKeyTests(unittest.TestCase):
     def test_validation_reads_the_stored_key_and_rechecks_date_draws(self):
         original = engine._write
         for change, expected in [('key', 'field-specific percentage'), ('date', 'date offset')]:
-            def corrupt(*args):
-                original(*args)
+            def corrupt(*args, **kwargs):
+                original(*args, **kwargs)
                 db = args[1].db
                 if change == 'key':
                     db.execute('UPDATE run SET run_key=?', (KEY_B,))

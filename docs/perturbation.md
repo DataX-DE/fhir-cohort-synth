@@ -3,8 +3,7 @@
 `perturb` produces **perturbed source-derived data** from a completed ingestion
 index. The `run` command creates that index and runs perturbation in one step.
 It preserves the resource population and graph while changing supported fields.
-No model is trained. Processing and all
-outputs stay local; the result has no privacy or anonymization guarantee.
+No model is trained. Processing and all outputs stay local.
 
 ## Run it
 
@@ -23,6 +22,27 @@ records completion only after ingestion, perturbation and output checks finish.
 The engine uses the ingestion reference graph directly. CLI commands accept only
 input/output paths and use the defaults: 1–16% quantity changes, ±30-day patient
 date shifts and a fresh secret key. Advanced options are Python API arguments.
+
+Terminal progress is automatic. Stage changes appear immediately, and an update
+repeats about every 10 seconds during longer work. For example:
+
+```text
+[00:00:00] Reading FHIR file 1/30
+[00:12:10] Resolving resource references - still working
+[00:20:30] Perturbing resources: 120,000/928,935 resources (12.9%) - still working
+```
+
+These timestamps and counts are illustrative. Percentages apply to the current
+stage; unknown totals have no percentage or estimated finish time. A repeated
+count means the process is still alive, not that the count has advanced. The final
+success/error message remains authoritative, and processing a stage's last resource
+does not mean its database writes or the whole run have finished. The display
+thread reads only in-memory progress, never the source or state database.
+
+Python callers can supply `progress(stage, completed, total, unit)` to `perturb()`,
+`run_export()` or `ingest()`; omitting it keeps API calls silent. `ConsoleProgress`
+is a context manager that implements this callback and stops its display thread
+on exit, including failures and interruptions.
 
 To reuse an existing index without ingesting the files again:
 
@@ -230,8 +250,8 @@ This proves the specified transformations and preservation properties. It does
 not establish every clinical dependency, full FHIR conformance or unchanged
 cohort distributions. Independent numeric changes can alter ratios, measurement
 trends and aggregate statistics; local SQLite summaries measure the actual effects.
-No categorical randomization, trajectory generation or privacy certification
-is performed. Narrative, attachments and other source text remain present.
+No categorical randomization or trajectory generation is performed.
+Narrative, attachments and other source text remain present.
 
 The perturbation run completes only after output validation, statistical
 aggregation and report writing. Exit codes are 0 for completed runs (including warnings), 2 for

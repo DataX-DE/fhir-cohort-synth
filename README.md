@@ -3,7 +3,6 @@
 Create a **perturbed source-derived FHIR export** locally. The tool retains
 existing resources and relationships while changing supported quantities,
 full dates and identity fields. No model training or runtime downloads are needed.
-It does not provide a privacy or anonymization guarantee.
 
 ## Run an export
 
@@ -25,6 +24,13 @@ Python is already installed; a bundled runtime and launcher remain future work.
 The output directory must be new and outside any input directory.
 
 The command **indexes resources and patient links → perturbs → checks and reports**.
+
+Progress appears automatically in the terminal: the current stage, elapsed time,
+input file number and processed counts. Long stages repeat an update about every
+10 seconds, including during database operations. Percentages describe the current
+stage when its total is known; they are not an overall completion estimate.
+Ingestion counts input lines/documents, which can include Bundles or duplicates.
+The final message reports success or failure. No additional CLI flags are needed.
 
 ```text
 new-output/
@@ -84,7 +90,7 @@ python3 fhir_synth.py ingest --input examples/mii-demo-bundle.json --output loca
 python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output local-data/perturbed
 ```
 
-The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None)`.
+The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None, progress=None)`.
 The ingestion database must be completed, supported and readable.
 The standalone `perturb` command also creates `result/` and `intermediates/`;
 its `result/reports/` contains the perturbation report, and its source index stays
@@ -109,6 +115,12 @@ nondefault strength and date range again. Without key reuse, every run gets a fr
 The public `seed` argument has been removed; older keyless
 output databases cannot be used for reproduction. The earlier `field_db` argument
 and CLI `--fields` option are also removed.
+
+Python API calls remain quiet by default. `run_export()`, `ingest()` and
+`perturb()` accept an optional `progress(stage, completed, total, unit)` callback;
+counts and totals may be `None`. The CLI uses `ConsoleProgress` from `progress.py`
+to print updates to stderr and keeps its final summary on stdout. Progress contains
+stage labels and counts, not patient values, identifiers, filenames or secret keys.
 
 The perturbation report includes transformation coverage and validation counts.
 Numeric distributions, before/after values and percentage-change summaries stay
@@ -172,11 +184,9 @@ Each ingestion run creates a **new** directory containing:
 | `report.json` | Resource and patient counts, reference status and issue totals |
 | `report.txt` | A short readable status report |
 
-**The SQLite database contains the original patient data. It is not synthetic
-or anonymized.** Keep the entire output on the hospital's approved local
-storage. Ingestion reports omit patient names, IDs, clinical values, literal
-references and source paths. Aggregate counts are still source-derived; keep
-reports local until reviewed. POSIX output permissions are directory `0700`, files `0600`;
+The SQLite database contains the original patient data. Ingestion reports omit
+patient names, IDs, clinical values, literal references and source paths.
+POSIX output permissions are directory `0700`, files `0600`;
 Windows relies on the destination's access controls.
 
 Source files are read only. Existing output directories are never overwritten.
@@ -260,8 +270,7 @@ the hospital's exact profile packages, pinned and bundled for offline use.
 
 Exit code is `0` for completion (including warnings), `2` for errors or invalid
 arguments, and `130` for an interrupted command. Warnings remain in the reports.
-A zero exit code is
-not a privacy guarantee, proof of export completeness or profile conformance.
+A zero exit code does not establish export completeness or profile conformance.
 History Bundles and entries without resources are reported as unsupported
 snapshot inputs. Bundle envelopes and request/response/search metadata remain
 in the original export. The index retains entry resource payloads, full URLs and

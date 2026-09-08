@@ -25,6 +25,7 @@ from .perturbation_handlers import DATE_TYPES, Handlers, full_date, label, patie
 from .perturbation_store import Ledger, read_reuse_key
 from .perturbation_report import build_report, write_report
 from .randomness import ALGORITHM, new_key, valid_key
+from .progress import notify, track
 
 
 class PerturbationError(InputError):
@@ -83,7 +84,7 @@ def _owner(slots, path):
     return slots.get(path[:2], slots[()])
 
 
-def _prepare_identities(source, ledger, settings):
+def _prepare_identities(source, ledger, settings, *, progress=None):
     """Allocate replacement IDs and patient date ranges, including forward targets.
 
     resource_id/root_id/patient_id are ingestion database row IDs. old_id/new_id
@@ -91,9 +92,10 @@ def _prepare_identities(source, ledger, settings):
     such a resource still receives a replacement identity.
     """
     db = ledger.db
-    for resource in source.execute(
+    resources = source.execute(
             'SELECT r.id,r.identity,r.digest,r.resource_type,r.logical_id,r.contained,p.patient_resource_id '
-            'FROM resources r LEFT JOIN patient_memberships p ON p.resource_id=r.id ORDER BY r.id'):
+            'FROM resources r LEFT JOIN patient_memberships p ON p.resource_id=r.id ORDER BY r.id')
+    for resource in track(resources, progress, 'Preparing replacement identities', unit='identities prepared'):
         # The ingestion index stores contained identity as "contained:<root row>#<id>".
         # Read that index convention here, never infer ownership from a FHIR ID.
         if resource['contained']:
@@ -113,7 +115,7 @@ def _prepare_identities(source, ledger, settings):
     db.commit()
 
 
-def _prepare_date_offsets(source, ledger, types):
+def _prepare_date_offsets(source, ledger, types, *, progress=None, total=None):
     """Intersect each patient's allowed day ranges before drawing their one offset.
 
     For example, a date at year 0001 forbids negative shifts. Restrict the shared
@@ -122,7 +124,8 @@ def _prepare_date_offsets(source, ledger, types):
     """
     db = ledger.db
     db.execute("UPDATE run SET phase='date_bounds'")
-    for number, root in enumerate(source.execute(ROOTS), 1):
+    roots = track(source.execute(ROOTS), progress, 'Checking patient date ranges', total=total)
+    for number, root in enumerate(roots, 1):
         resource = loads(root['payload'])
         slots = _slots(db, root['id'], resource)
         for path, owner in slots.items():
@@ -233,7 +236,7 @@ def _rewrite_reference(field, owner, slots, edges, find_target, root_id):
     return replacement, 'changed', 'reference_rewritten', target_id
 
 
-def _write(source, ledger, types, settings, destination):
+def _write(source, ledger, types, settings, destination, *, progress=None, total=None):
     """Transform one source tree at a time, recording every edit before emission."""
     db = ledger.db
     handlers = Handlers(ledger.run_key, settings['strength'])
@@ -253,7 +256,8 @@ def _write(source, ledger, types, settings, destination):
 
     with destination.open('x', encoding='utf-8') as stream:
         destination.chmod(0o600)
-        for number, root in enumerate(source.execute(ROOTS), 1):
+        roots = track(source.execute(ROOTS), progress, 'Perturbing resources', total=total)
+        for number, root in enumerate(roots, 1):
             resource = loads(root['payload'])
             slots = _slots(db, root['id'], resource)
             # Use a stable resource identity, not a database row ID or iteration
@@ -305,7 +309,7 @@ def _write(source, ledger, types, settings, destination):
     ledger.flush()
 
 
-def _validate(ledger, destination):
+def _validate(ledger, destination, *, progress=None, total=None):
     """Read emitted JSON afresh and prove that only recorded changes occurred.
 
     Undoing changes in this one output tree must reproduce the original SHA256
@@ -332,7 +336,7 @@ def _validate(ledger, destination):
     # Release the active SELECT even on a validation failure, so the failure
     # handler can checkpoint SQLite and preserve the original diagnostic.
     with closing(roots), destination.open(encoding='utf-8') as stream:
-        for root, line in zip_longest(roots, stream):
+        for root, line in track(zip_longest(roots, stream), progress, 'Validating perturbed resources', total=total):
             if root is None or line is None:
                 raise PerturbationError('Output resource population does not match the source.')
             value = loads(line)
@@ -376,7 +380,7 @@ def _validate(ledger, destination):
     return counts
 
 
-def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None):
+def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None, progress=None):
     """Create perturbed source-derived records and return the report header.
 
     The ingestion database must be complete and is opened read-only. We edit
@@ -387,22 +391,28 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
     output = Path(output_dir).absolute()
     if output.exists() or output.is_symlink():
         raise PerturbationError('Output already exists; choose a new output directory.')
-    return _perturb(cohort_db, output, settings, reuse_key_from)
+    return _perturb(cohort_db, output, settings, reuse_key_from, progress=progress)
 
 
-def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created=False):
+def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created=False, progress=None):
     """Write result/ and intermediates/ for either public entry point.
 
     Only run_export() supplies output_created=True: it has already reserved the
     fresh directory and placed its ingestion index in intermediates/. Direct
     perturb() calls reserve their destination after validating the source/key.
     """
+    notify(progress, 'Checking input database and FHIR definitions')
     types = TypeIndex()
     with open_source(cohort_db) as (source, source_run):
         if source_run['fhir_version'] != '4.0.1':
             raise PerturbationError('Perturbation requires a FHIR R4 4.0.1 source index.')
+        notify(progress, 'Checking source snapshot')
         fingerprint = source_fingerprint(source)
+        notify(progress, 'Planning output files')
         files = plan_files(source)
+        # The file plan already counted roots. Reuse it for stage percentages
+        # instead of querying SQLite repeatedly just to display progress.
+        total = sum(plan['records'] for plan in files)
         # Validate reproduction inputs before creating the perturbation output.
         # A fresh run always uses operating-system randomness, even at strength 0.
         run_key = (new_key() if reuse_key_from is None else
@@ -418,27 +428,28 @@ def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created
             issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
             db.executemany('INSERT INTO source_issues VALUES (?,?,?)', ((r['severity'], r['code'], r['frequency']) for r in issues))
             # 1. Allocate every target ID and one date offset per patient.
-            _prepare_identities(source, ledger, settings)
-            _prepare_date_offsets(source, ledger, types)
+            _prepare_identities(source, ledger, settings, progress=progress)
+            _prepare_date_offsets(source, ledger, types, progress=progress, total=total)
             # 2. Write a private partial export and its field-by-field audit trail.
             db.execute("UPDATE run SET phase='writing'")
             db.commit()
             partial = intermediates / '.perturbed.ndjson.partial'
-            _write(source, ledger, types, settings, partial)
+            _write(source, ledger, types, settings, partial, progress=progress, total=total)
             # 3. Reread what was actually written before reporting success.
             db.execute("UPDATE run SET phase='validation'")
             db.commit()
-            validation = _validate(ledger, partial)
+            validation = _validate(ledger, partial, progress=progress, total=total)
             # Restore file boundaries only after every transformed root passes.
             # The packager rereads each final file and checks its exact bytes.
             db.execute("UPDATE run SET phase='exporting'")
             db.commit()
             export_partial = intermediates / '.result.partial'
             export_partial.mkdir(mode=0o700)
-            exported = write_source_files(source, partial, export_partial / 'fhir', files)
+            exported = write_source_files(source, partial, export_partial / 'fhir', files, progress=progress)
             # 4. Measure the actual changes, including changes lost to rounding.
             db.execute("UPDATE run SET phase='aggregation'")
             db.commit()
+            notify(progress, 'Calculating report statistics')
             ledger.aggregate()
             header = build_report(ledger, source_run['status'], validation)
             header['export'] = exported
@@ -448,6 +459,7 @@ def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created
             # moved; databases, keys and temporary work stay in intermediates/.
             db.execute("UPDATE run SET phase='reporting'")
             db.commit()
+            notify(progress, 'Writing result reports')
             reports = export_partial / 'reports'
             reports.mkdir(mode=0o700)
             write_report(reports / 'perturbation-report.json', header, ledger)
@@ -456,6 +468,7 @@ def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created
                     (intermediates / name).rename(reports / name)
             export_partial.rename(output / 'result')
             partial.unlink()
+            notify(progress, 'Finishing and saving output databases')
             db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
             db.commit()
             db.execute('PRAGMA wal_checkpoint(TRUNCATE)')

@@ -1,8 +1,7 @@
 # Implementation status: perturb existing FHIR records
 
 The output is **perturbed source-derived data** for local use. The earlier
-independent cohort sampler has been removed. No privacy, anonymization or
-differential-privacy guarantee is made; privacy assessment remains outside scope.
+independent cohort sampler has been removed.
 
 ## Implemented
 
@@ -64,5 +63,4 @@ pre-existing errors, new errors and profiles that could not be checked.
 Use the coverage report with the hospital to identify additional units and
 profile-specific needs. Confirm and pin their deployed profile packages before
 integrating offline conformance validation into their workflow. Bundle a Python runtime and launcher after the intended
-hospital workflow is tested. Broader statistical fidelity and privacy assessment
-are separate work; local execution alone does not anonymize records.
+hospital workflow is tested. Broader statistical fidelity is separate work.

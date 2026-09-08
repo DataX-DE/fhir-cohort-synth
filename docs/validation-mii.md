@@ -127,7 +127,7 @@ explicitly fixed to R4 4.0.1. No fake 4.0.0 cache entry is supplied.
 The current hospital runtime gained no dependencies or transformation changes.
 This audit adds the development harness and evidence, including explicit detection
 of unchecked profiles. It does not establish Frankfurt's exact deployed package
-versions, complete clinical validity, privacy, or full terminology conformance.
+versions, complete clinical validity or full terminology conformance.
 
 ## Reproduce and inspect
 

@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 from .jsonio import dumps, loads
 from .store import Store
+from .progress import notify, track
 
 SUFFIXES = (".json", ".ndjson", ".jsonl", ".json.gz", ".ndjson.gz", ".jsonl.gz")
 INGEST_CHECKPOINT_LINES = 10000
@@ -85,7 +86,7 @@ def normalize_base_url(value):
     return value.rstrip("/")
 
 
-def read_source(store, path, source_id):
+def read_source(store, path, source_id, *, progress=None, stage='Reading FHIR file'):
     """Parse one file and register each resource with its source location.
 
     ``source_id`` identifies a row in SQLite's sources table. A ``locator``
@@ -105,7 +106,7 @@ def read_source(store, path, source_id):
             # as a whole document, so its largest file determines memory use
             # during this parsing step. utf-8-sig accepts an optional BOM.
             documents = enumerate(stream, 1) if ndjson else [(1, stream.read())]
-            for line, raw in documents:
+            for line, raw in track(documents, progress, stage, unit='lines read' if ndjson else 'documents read'):
                 # Checkpoint the previous batch before starting another
                 # document. Checking here also handles blank or invalid lines
                 # at the boundary. Bundle/contained children stay atomic, and
@@ -142,7 +143,7 @@ def text_report(report):
     return "\n".join(lines) + "\n"
 
 
-def ingest(inputs, output, base_url=None):
+def ingest(inputs, output, base_url=None, *, progress=None):
     """Build a fresh local index and return its aggregate report dictionary.
 
     Expected data problems are recorded as issues, allowing valid resources to
@@ -152,14 +153,15 @@ def ingest(inputs, output, base_url=None):
     """
     # 1. Validate paths and create a private destination for the source data.
     base_url = normalize_base_url(base_url)
+    notify(progress, 'Finding input files')
     files, output = discover(inputs, output)
     output.parent.mkdir(parents=True, exist_ok=True)
     # mkdir is exclusive, so a concurrent run cannot replace this directory.
     output.mkdir(mode=0o700)
-    return _ingest(files, output, base_url)
+    return _ingest(files, output, base_url, progress=progress)
 
 
-def _ingest(files, output, base_url=None):
+def _ingest(files, output, base_url=None, *, progress=None):
     """Write into a private directory already prepared by ingest() or run_export().
 
     Both callers validate input paths and reserve a fresh output first. Keeping
@@ -173,10 +175,12 @@ def _ingest(files, output, base_url=None):
     try:
         # 2. Register all resources before attempting to follow references.
         #    An Encounter may appear before its Patient, even in another file.
-        for path in files:
+        for number, path in enumerate(files, 1):
+            stage = f'Reading FHIR file {number}/{len(files)}'
+            notify(progress, stage)
             source_id = store.db.execute("INSERT INTO sources(path) VALUES (?)", (str(path),)).lastrowid
             before = store.db.execute("SELECT count(*) FROM occurrences").fetchone()[0]
-            read_source(store, path, source_id)
+            read_source(store, path, source_id, progress=progress, stage=stage)
             after = store.db.execute("SELECT count(*) FROM occurrences").fetchone()[0]
             if before == after:
                 store.issue("source_without_resources", "warning", source_id)
@@ -191,16 +195,21 @@ def _ingest(files, output, base_url=None):
         #    through the resolved patient and encounter relationships.
         # Consolidate append-only bulk writes before random reference lookups.
         # Otherwise reads have to seek through a much larger, fragmented WAL.
+        notify(progress, 'Saving source index')
         store.db.commit()
         store.db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        notify(progress, 'Resolving resource references')
         store.resolve()
+        notify(progress, 'Assigning resources to patients')
         store.group_patients()
         # Finish bulk writes while the run is still in_progress. DELETE mode
         # checkpoints and removes WAL sidecars, making the completed index
         # portable and readable from a directory with read-only permissions.
+        notify(progress, 'Saving linked source index')
         store.db.commit()
         store.db.execute("PRAGMA journal_mode=DELETE")
         # 4. Summarize the index and issues, then write both report formats.
+        notify(progress, 'Writing ingestion reports')
         report = store.report()
         # Written only after indexing is complete. A missing report always
         # means the run did not finish, even if some database rows exist.

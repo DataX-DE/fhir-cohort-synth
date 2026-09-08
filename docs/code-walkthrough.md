@@ -16,6 +16,10 @@ Its helpers handle each phase.
 
 These modules live under `fhir_cohort_synth/`. `fhir_synth.py` is the launcher;
 `cli.py` parses options, calls the public functions and formats safe console errors.
+It also opens `progress.py: ConsoleProgress()`, which prints stage changes and
+periodic elapsed/count updates. The processing functions send aggregate progress
+through an optional callback. `track()` counts completed loop iterations in batches;
+it does not query the databases or alter resource data. API calls are silent by default.
 The public stage functions prepare their own fresh destinations. The workflow
 calls their internal `_ingest()` and `_perturb()` functions after reserving one
 shared destination, so both stages use the same `intermediates/` directory.

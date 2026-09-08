@@ -143,8 +143,8 @@ class ExportFilesTests(unittest.TestCase):
         self.prepare()
         original = engine.write_source_files
 
-        def interrupt(*args):
-            original(*args)
+        def interrupt(*args, **kwargs):
+            original(*args, **kwargs)
             raise KeyboardInterrupt()
 
         with patch.object(engine, 'write_source_files', interrupt), self.assertRaises(KeyboardInterrupt):

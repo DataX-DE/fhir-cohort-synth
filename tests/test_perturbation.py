@@ -681,8 +681,8 @@ class PerturbationTests(unittest.TestCase):
     def test_validation_detects_unrecorded_content_change(self):
         self.prepare([resource('Patient', 'p', gender='female')])
         original = engine._write
-        def corrupt(*args):
-            original(*args)
+        def corrupt(*args, **kwargs):
+            original(*args, **kwargs)
             path = args[-1]
             path.write_text(path.read_text().replace('female', 'male'))
         with patch.object(engine, '_write', side_effect=corrupt):
@@ -694,8 +694,8 @@ class PerturbationTests(unittest.TestCase):
                       observation('later', Decimal('100.00'))])
         original = engine._write
 
-        def corrupt(source, ledger, types, settings, destination):
-            original(source, ledger, types, settings, destination)
+        def corrupt(source, ledger, types, settings, destination, **kwargs):
+            original(source, ledger, types, settings, destination, **kwargs)
             records = [loads(line) for line in destination.read_text().splitlines()]
             records[1]['valueQuantity']['value'] = Decimal('150.00')
             destination.write_text('\n'.join(dumps(r) for r in records) + '\n')
@@ -713,7 +713,8 @@ class PerturbationTests(unittest.TestCase):
         args = ['perturb', '--input', str(self.cohort), '--output', str(self.output)]
         with redirect_stdout(io.StringIO()) as output:
             self.assertEqual(main(args), 0)
-        self.assertIn('perturbed source-derived data', output.getvalue())
+        self.assertIn('Perturbation: completed', output.getvalue())
+        self.assertNotIn('privacy', output.getvalue().lower())
         with patch('fhir_cohort_synth.cli.perturb', side_effect=RuntimeError('SENSITIVE-EXAMPLE')):
             with redirect_stderr(io.StringIO()) as error:
                 self.assertEqual(main(args), 2)

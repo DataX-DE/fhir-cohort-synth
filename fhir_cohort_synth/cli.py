@@ -11,6 +11,7 @@ import sys
 from . import __version__
 from .ingest import InputError, ingest
 from .perturbation import perturb
+from .progress import ConsoleProgress
 from .workflow import run_export
 
 
@@ -20,7 +21,8 @@ def perturb_command(args):
     try:
         # Hospital runs use the API defaults. Advanced configuration remains
         # available to Python callers, without a second set of CLI defaults.
-        report = operation(args.input, args.output)
+        with ConsoleProgress() as progress:
+            report = operation(args.input, args.output, progress=progress)
     except InputError as error:
         print(f"Cannot perturb: {error}", file=sys.stderr)
         return 2
@@ -34,7 +36,7 @@ def perturb_command(args):
           f"{report['validation']['changes_checked']} changed fields verified.")
     print(f"Created {report['export']['files_checked']} source-layout files in result/fhir/ "
           "and reports in result/reports/; databases are in intermediates/.")
-    print("Outputs are local perturbed source-derived data. No privacy or full profile-conformance guarantee is made.")
+    print(f"Elapsed: {progress.elapsed}.")
     return 0
 
 
@@ -62,7 +64,8 @@ def main(argv=None):
     if args.command in {"run", "perturb"}:
         return perturb_command(args)
     try:
-        report = ingest(args.input, args.output)
+        with ConsoleProgress() as progress:
+            report = ingest(args.input, args.output, progress=progress)
     except InputError as error:
         # InputError messages are deliberately written without source values.
         print(f"Cannot ingest: {error}", file=sys.stderr)
@@ -78,5 +81,6 @@ def main(argv=None):
     print(f"Ingestion: {report['status']}. "
           f"{report['counts']['unique_resources']} resources; {report['counts']['patients']} patient resources.")
     print("Created cohort.sqlite, report.json and report.txt in the output directory.")
+    print(f"Elapsed: {progress.elapsed}.")
     print("The database contains source patient data. Record perturbation and full profile validation have not run.")
     return 2 if report["status"] == "incomplete" else 0

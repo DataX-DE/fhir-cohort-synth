@@ -6,6 +6,7 @@ chooses their directories, stops on ingestion errors and records overall status.
 from .ingest import InputError, _ingest, discover, normalize_base_url
 from .jsonio import dumps
 from .perturbation import _perturb, validate_settings
+from .progress import notify
 
 
 def _write_status(output, status, phase):
@@ -17,7 +18,7 @@ def _write_status(output, status, phase):
     partial.replace(output / 'run.json')
 
 
-def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None, base_url=None):
+def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None, base_url=None, progress=None):
     """Run both stages in a fresh directory and return the perturbation summary.
 
     intermediates/ contains databases, temporary work and the overall run status.
@@ -27,6 +28,7 @@ def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
     """
     settings = validate_settings(strength, date_shift_days)
     base_url = normalize_base_url(base_url)
+    notify(progress, 'Finding input files')
     files, output = discover(inputs, output_dir)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.mkdir(mode=0o700)
@@ -35,13 +37,14 @@ def run_export(inputs, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
     phase = 'ingestion'
     try:
         _write_status(intermediates, 'in_progress', phase)
-        source = _ingest(files, intermediates, base_url=base_url)
+        source = _ingest(files, intermediates, base_url=base_url, progress=progress)
         if source['status'] not in {'completed', 'completed_with_warnings'}:
             raise InputError('Ingestion reported errors; inspect intermediates/report.json. Use a new output directory to retry.')
 
         phase = 'perturbation'
         _write_status(intermediates, 'in_progress', phase)
-        report = _perturb(intermediates / 'cohort.sqlite', output, settings, reuse_key_from, output_created=True)
+        report = _perturb(intermediates / 'cohort.sqlite', output, settings, reuse_key_from,
+                          output_created=True, progress=progress)
         # The stage returns only after checking the written records and reports.
         phase = 'complete'
         _write_status(intermediates, report['status'], phase)

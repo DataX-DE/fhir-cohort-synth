@@ -13,6 +13,7 @@ from os.path import commonpath
 from pathlib import Path
 
 from .ingest import InputError
+from .progress import track
 
 
 # IDs increase as ingestion visits files. The first occurrence says which file
@@ -61,7 +62,7 @@ def plan_files(source):
     return plans
 
 
-def write_source_files(source, verified_stream, destination, plans):
+def write_source_files(source, verified_stream, destination, plans, *, progress=None):
     """Partition the verified stream, then check each file's decompressed bytes.
 
     Only one writer is open at a time. Zero-count source files produce empty
@@ -74,7 +75,7 @@ def write_source_files(source, verified_stream, destination, plans):
     manifest = []
     stream_digest = hashlib.sha256()
     with verified_stream.open('rb') as stream:
-        for plan in plans:
+        for plan in track(plans, progress, 'Writing and checking FHIR files', total=len(plans), unit='files', every=1):
             target = destination / plan['file']
             # Create nested directories privately, including on the first file.
             for parent in reversed(target.parents):

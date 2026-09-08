@@ -34,8 +34,12 @@ class WorkflowTests(unittest.TestCase):
     def test_one_command_matches_manual_stages(self):
         before = hashlib.sha256(EXAMPLE.read_bytes()).hexdigest()
         args = ['run', '--input', str(EXAMPLE), '--output', str(self.output)]
-        with redirect_stdout(io.StringIO()) as console:
+        with redirect_stdout(io.StringIO()) as console, redirect_stderr(io.StringIO()) as progress:
             self.assertEqual(main(args), 0)
+        self.assertIn('Reading FHIR file 1/1', progress.getvalue())
+        self.assertIn('Perturbing resources: 23/23 resources (100.0%)', progress.getvalue())
+        self.assertIn('Validating perturbed resources', progress.getvalue())
+        self.assertIn('Elapsed:', console.getvalue())
         self.assertEqual(self.status()['phase'], 'complete')
         self.assertIn('files in result/fhir/', console.getvalue())
         self.assertIn('reports in result/reports/', console.getvalue())
