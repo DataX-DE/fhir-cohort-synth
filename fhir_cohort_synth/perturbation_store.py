@@ -42,20 +42,23 @@ CREATE TABLE resource_mappings (resource_id INTEGER PRIMARY KEY, root_id INTEGER
  path TEXT, digest TEXT NOT NULL);
 CREATE INDEX mapping_root ON resource_mappings(root_id);
 -- old_present=0 distinguishes an added resource ID from an original JSON null.
+-- These composite keys already identify each row. WITHOUT ROWID stores the
+-- row with that key once, avoiding a second index and lookup for every edit.
+-- Column names/keys stay compatible with existing schema 3 state databases.
 CREATE TABLE changes (root_id INTEGER NOT NULL, path TEXT NOT NULL, owner_id INTEGER NOT NULL,
  old_present INTEGER NOT NULL, old_json TEXT, new_json TEXT NOT NULL,
  reason TEXT NOT NULL, datatype TEXT, target_id INTEGER,
- PRIMARY KEY(root_id,path));
+ PRIMARY KEY(root_id,path)) WITHOUT ROWID;
 CREATE TABLE field_actions (resource_type TEXT NOT NULL, path TEXT NOT NULL,
  datatype TEXT NOT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, frequency INTEGER NOT NULL,
- PRIMARY KEY(resource_type,path,datatype,action,reason));
+ PRIMARY KEY(resource_type,path,datatype,action,reason)) WITHOUT ROWID;
 CREATE TABLE numeric_contexts (id INTEGER PRIMARY KEY, context_json TEXT NOT NULL UNIQUE,
  resource_type TEXT NOT NULL, path TEXT NOT NULL, datatype TEXT NOT NULL,
  samples INTEGER NOT NULL DEFAULT 0, changed INTEGER NOT NULL DEFAULT 0,
  zero_baselines INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE numeric_frequencies (context_id INTEGER NOT NULL, phase TEXT NOT NULL,
  value TEXT NOT NULL, frequency INTEGER NOT NULL,
- PRIMARY KEY(context_id,phase,value));
+ PRIMARY KEY(context_id,phase,value)) WITHOUT ROWID;
 CREATE TABLE numeric_summaries (context_id INTEGER NOT NULL, phase TEXT NOT NULL,
  summary_json TEXT NOT NULL, PRIMARY KEY(context_id,phase));
 CREATE TABLE source_issues (severity TEXT, code TEXT, frequency INTEGER);

@@ -16,8 +16,9 @@ python3 fhir_synth.py run \
 
 Every output directory must be new. Python 3.11+ and its standard-library SQLite
 module suffice. There are no runtime downloads or third-party dependencies.
-The export files are in `local-data/demo/perturbed/fhir/`. Original indexed data
-and ingestion reports are in `local-data/demo/index/`. The overall `run.json`
+The export files are in `local-data/demo/result/fhir/` and the reports in
+`local-data/demo/result/reports/`. Copy the completed `result/` folder to include
+both. Databases and temporary files stay in `local-data/demo/intermediates/`. Its `run.json`
 records completion only after ingestion, perturbation and output checks finish.
 The engine uses the ingestion reference graph directly. CLI commands accept only
 input/output paths and use the defaults: 1–16% quantity changes, ±30-day patient
@@ -26,14 +27,14 @@ date shifts and a fresh secret key. Advanced options are Python API arguments.
 To reuse an existing index without ingesting the files again:
 
 ```sh
-python3 fhir_synth.py perturb --input local-data/demo/index/cohort.sqlite --output local-data/another-perturbed-run
+python3 fhir_synth.py perturb --input local-data/demo/intermediates/cohort.sqlite --output local-data/another-perturbed-run
 ```
 
 ```python
 from fhir_cohort_synth.perturbation import perturb
 
 summary = perturb(
-    "local-data/demo/index/cohort.sqlite",
+    "local-data/demo/intermediates/cohort.sqlite",
     "local-data/another-perturbed-run",
     strength=0.16, date_shift_days=30,
 )
@@ -52,9 +53,9 @@ To reuse a key locally through Python, point to a completed run's state database
 
 ```python
 perturb(
-    "local-data/demo/index/cohort.sqlite",
+    "local-data/demo/intermediates/cohort.sqlite",
     "local-data/reproduced",
-    reuse_key_from="local-data/demo/perturbed/perturbation-state.sqlite",
+    reuse_key_from="local-data/demo/intermediates/perturbation-state.sqlite",
 )
 ```
 
@@ -182,19 +183,27 @@ exactly as supplied.
 
 ## Outputs and validation
 
-- `fhir/`: source-named files, preserving NDJSON/JSONL and gzip formats and
+- `result/fhir/`: source-named files, preserving NDJSON/JSONL and gzip formats and
   directories relative to the source files' common parent. A deduplicated root
   appears in its first source file, with contained resources nested once.
   Single-resource JSON stays JSON; unpacked Bundle roots use `.ndjson` files.
-- `perturbation-state.sqlite`: the secret key and algorithm, settings, source fingerprint, definition
+- `intermediates/perturbation-state.sqlite`: the secret key and algorithm, settings, source fingerprint, definition
   provenance, identity maps, patient parameters, exact changes, action counts,
   numeric frequencies and run status. It contains original source values.
-- `perturbation-report.json`: coverage by root resource type and normalized
+- `result/reports/perturbation-report.json`: coverage by root resource type and normalized
   field path, original warning counts and validation results. Numeric values,
   distributions, ranges, quantiles and percentage-change summaries are excluded;
   these remain in the local SQLite database along with context coding/unit values.
   The `export` section lists source-relative filenames, record counts
   and decompressed checksums. Filename collisions fail before creating output.
+
+The `run` workflow puts the ingestion reports (`report.json` and `report.txt`)
+in `result/reports/` too. Its `cohort.sqlite` and `run.json` stay in `intermediates/`.
+Standalone `perturb` uses the same layout but writes only the perturbation report
+and leaves the supplied source index in place. Reports and resources are staged
+together before publishing `result/`; unfinished runs retain their reports in
+`intermediates/`, including its partial export directory. Existing exports are not
+moved; key reuse accepts a previous state database at its old path.
 
 Each object, array and scalar has an action count; these counts are not the
 number of resources. Local SQLite numeric contexts include preserved numeric
@@ -228,7 +237,7 @@ The perturbation run completes only after output validation, statistical
 aggregation and report writing. Exit codes are 0 for completed runs (including warnings), 2 for
 failure and 130 for interruption. Check `run.status`; failed/interrupted runs
 retain local partial artifacts and require a new destination. For the one-command
-workflow, check the top-level `run.json` too: it records the overall stage and
+workflow, check `intermediates/run.json` too: it records the overall stage and
 status, including ingestion failures before perturbation starts. A forcibly killed
 process can retain `in_progress`. The input database is opened read-only. POSIX
 permissions are `0700` for the output directory and `0600` for files; completed

@@ -28,21 +28,24 @@ The command **indexes resources and patient links → perturbs → checks and re
 
 ```text
 new-output/
-  run.json                         # Overall status and phase
-  index/
+  intermediates/
+    run.json                       # Overall status and phase
     cohort.sqlite                  # Original resources and resolved links
-    report.json
-    report.txt
-  perturbed/
+    perturbation-state.sqlite      # Identity maps, parameters and recorded edits
+  result/
     fhir/                          # Files named and grouped like the input
-      MimicPatient.ndjson.gz       # Example input filenames
+      MimicPatient.ndjson.gz        # Example input filenames
       MimicObservationED.ndjson.gz
       ...
-    perturbation-state.sqlite      # Identity maps, parameters and recorded edits
-    perturbation-report.json       # Coverage counts and validation results
+    reports/
+      report.json                  # Ingestion report
+      report.txt                   # Ingestion report, readable text
+      perturbation-report.json     # Coverage counts and validation results
 ```
 
-`run.json` is complete only after both stages finish, including output checks
+Copy the completed `result/` folder to include both the perturbed FHIR files and
+reports. Databases, run status and temporary work files stay in `intermediates/`.
+`intermediates/run.json` is complete only after both stages finish, including output checks
 and reporting. Warnings are carried into the reports. An ingestion error stops
 the workflow before perturbation; a failure or interruption requires a new
 output directory. All outputs, including the original-data index, stay local.
@@ -50,7 +53,7 @@ output directory. All outputs, including the original-data index, stay local.
 The export preserves NDJSON/JSONL filenames, gzip compression and directories
 relative to the source files' common parent. Records remain in source order.
 For the MIMIC demo, the 30 input `.ndjson.gz` files produce 30 matching files
-under `perturbed/fhir/`, including separate Observation exports.
+under `result/fhir/`, including separate Observation exports.
 Single-resource JSON files remain JSON. Bundle inputs are unpacked by ingestion
 and use one `.ndjson` file per source Bundle; their envelopes are not rebuilt.
 Deduplicated roots stay in their first source file. The report's `export` section
@@ -83,6 +86,10 @@ python3 fhir_synth.py perturb --input local-data/index/cohort.sqlite --output lo
 
 The API is `perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_key_from=None)`.
 The ingestion database must be completed, supported and readable.
+The standalone `perturb` command also creates `result/` and `intermediates/`;
+its `result/reports/` contains the perturbation report, and its source index stays
+at the supplied input path. Standalone `ingest` still
+writes `cohort.sqlite`, `report.json` and `report.txt` directly to its output.
 To reproduce a previous export locally through Python, supply its state database and the same
 input snapshot and numeric/date settings, using a new output directory:
 
@@ -92,7 +99,7 @@ from fhir_cohort_synth.perturbation import perturb
 perturb(
     "local-data/index/cohort.sqlite",
     "local-data/reproduced",
-    reuse_key_from="local-data/perturbed/perturbation-state.sqlite",
+    reuse_key_from="local-data/perturbed/intermediates/perturbation-state.sqlite",
 )
 ```
 
@@ -307,6 +314,8 @@ python3 -m unittest discover -s tests -v
 
 Tests use only invented resources and temporary directories. See
 [the local index schema](docs/ingestion-schema.md) for queries and semantics.
+See [performance notes](docs/performance.md) for measured timings, the optimizations
+and a standard-library profiling command.
 
 FHIR reference semantics:
 [HL7 R4 references](https://hl7.org/fhir/R4/references.html) and

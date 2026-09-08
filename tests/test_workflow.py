@@ -29,24 +29,38 @@ class WorkflowTests(unittest.TestCase):
         self.output = self.root / 'run'
 
     def status(self):
-        return loads((self.output / 'run.json').read_text())
+        return loads((self.output / 'intermediates/run.json').read_text())
 
     def test_one_command_matches_manual_stages(self):
         before = hashlib.sha256(EXAMPLE.read_bytes()).hexdigest()
         args = ['run', '--input', str(EXAMPLE), '--output', str(self.output)]
-        with redirect_stdout(io.StringIO()):
+        with redirect_stdout(io.StringIO()) as console:
             self.assertEqual(main(args), 0)
         self.assertEqual(self.status()['phase'], 'complete')
-        self.assertEqual({path.name for path in self.output.iterdir()}, {'index', 'perturbed', 'run.json'})
+        self.assertIn('files in result/fhir/', console.getvalue())
+        self.assertIn('reports in result/reports/', console.getvalue())
+        self.assertIn('databases are in intermediates/', console.getvalue())
+        self.assertEqual({path.name for path in self.output.iterdir()}, {'intermediates', 'result'})
+        self.assertEqual({path.name for path in (self.output / 'intermediates').iterdir()},
+                         {'cohort.sqlite', 'run.json', 'perturbation-state.sqlite'})
+        self.assertEqual({path.name for path in (self.output / 'result').iterdir()},
+                         {'fhir', 'reports'})
+        self.assertEqual({path.name for path in (self.output / 'result/fhir').iterdir()},
+                         {'mii-demo-bundle.ndjson'})
+        self.assertEqual({path.name for path in (self.output / 'result/reports').iterdir()},
+                         {'report.json', 'report.txt', 'perturbation-report.json'})
         self.assertEqual(before, hashlib.sha256(EXAMPLE.read_bytes()).hexdigest())
 
         ingest([EXAMPLE], self.root / 'manual-index')
         perturb(self.root / 'manual-index/cohort.sqlite', self.root / 'manual-output',
-                reuse_key_from=self.output / 'perturbed/perturbation-state.sqlite')
-        for name in ('fhir/mii-demo-bundle.ndjson', 'perturbation-report.json'):
-            self.assertEqual((self.output / 'perturbed' / name).read_bytes(),
+                reuse_key_from=self.output / 'intermediates/perturbation-state.sqlite')
+        for name in ('result/fhir/mii-demo-bundle.ndjson', 'result/reports/perturbation-report.json'):
+            self.assertEqual((self.output / name).read_bytes(),
                              (self.root / 'manual-output' / name).read_bytes())
-        reingested = ingest([self.output / 'perturbed/fhir'], self.root / 'reingested')
+        for name in ('report.json', 'report.txt'):
+            self.assertEqual((self.output / 'result/reports' / name).read_bytes(),
+                             (self.root / 'manual-index' / name).read_bytes())
+        reingested = ingest([self.output / 'result/fhir'], self.root / 'reingested')
         self.assertNotEqual(reingested['status'], 'incomplete')
         self.assertEqual(reingested['counts']['unique_resources'], 23)
         self.assertEqual(reingested['reference_status'], {'resolved': 37})
@@ -63,7 +77,7 @@ class WorkflowTests(unittest.TestCase):
         patient_file.write_text(dumps(patient))
         # An explicit server namespace is an advanced Python API setting.
         run_export([inputs, patient_file], self.output, base_url='https://example.invalid/fhir')
-        result = loads((self.output / 'perturbed/perturbation-report.json').read_text())
+        result = loads((self.output / 'result/reports/perturbation-report.json').read_text())
         self.assertEqual(result['counts']['root_resources'], 2)
         self.assertEqual(result['validation']['references_checked'], 1)
         self.assertEqual(self.status()['status'], 'completed')
@@ -86,7 +100,7 @@ class WorkflowTests(unittest.TestCase):
         with self.assertRaises(InputError):
             run_export([EXAMPLE], self.output)
         self.assertEqual(sentinel.read_text(), 'keep')
-        self.assertFalse((self.output / 'index').exists())
+        self.assertFalse((self.output / 'intermediates').exists())
 
     def test_symlink_destination_is_rejected(self):
         self.output.symlink_to(self.root / 'not-created')
@@ -102,19 +116,21 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(main(['run', '--input', str(source), '--output', str(self.output)]), 2)
         self.assertNotIn('PRIVATE_SOURCE_VALUE', console.getvalue())
         self.assertEqual(self.status(), {'status': 'failed', 'phase': 'ingestion'})
-        self.assertFalse((self.output / 'perturbed').exists())
-        self.assertEqual(loads((self.output / 'index/report.json').read_text())['status'], 'incomplete')
+        self.assertEqual({path.name for path in self.output.iterdir()}, {'intermediates'})
+        self.assertEqual(loads((self.output / 'intermediates/report.json').read_text())['status'], 'incomplete')
 
     def test_interruptions_and_report_errors_never_complete_the_workflow(self):
         for target, error, phase in [
                 ('fhir_cohort_synth.ingest.read_source', KeyboardInterrupt(), 'ingestion'),
                 ('fhir_cohort_synth.perturbation._write', KeyboardInterrupt(), 'perturbation'),
-                ('fhir_cohort_synth.perturbation.write_report', OSError('private'), 'perturbation')]:
+                ('fhir_cohort_synth.perturbation.write_report', OSError('private'), 'perturbation'),
+                ('pathlib.Path.rename', OSError('private'), 'perturbation')]:
             self.output = self.root / target.rsplit('.', 1)[1]
             with patch(target, side_effect=error), self.assertRaises(type(error)):
                 run_export([EXAMPLE], self.output)
             expected = 'interrupted' if isinstance(error, KeyboardInterrupt) else 'failed'
             self.assertEqual(self.status(), {'status': expected, 'phase': phase})
+            self.assertEqual({path.name for path in self.output.iterdir()}, {'intermediates'})
             with self.assertRaises(InputError):
                 run_export([EXAMPLE], self.output)
 
@@ -135,7 +151,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(path.stat().st_mode & 0o777, 0o700 if path.is_dir() else 0o600)
         self.assertFalse(list(self.output.rglob('*-wal')))
         self.assertFalse(list(self.output.rglob('*-shm')))
-        with closing(sqlite3.connect(self.output / 'perturbed/perturbation-state.sqlite')) as db:
+        with closing(sqlite3.connect(self.output / 'intermediates/perturbation-state.sqlite')) as db:
             self.assertIn(db.execute('SELECT status FROM run').fetchone()[0], ('completed', 'completed_with_warnings'))
 
     def test_cli_masks_unexpected_errors_and_handles_interrupt(self):

@@ -163,7 +163,9 @@ class ResourceStore:
         inserted = bool(cursor.rowcount)
         # Even an exact duplicate needs an occurrence to preserve provenance.
         # Both IDs below are database keys, not the resource's FHIR id string.
-        resource_id = self.db.execute(
+        # A successful insert already returns its row ID. Only duplicates need
+        # another identity lookup; they must reuse the original resource row.
+        resource_id = cursor.lastrowid if inserted else self.db.execute(
             "SELECT id FROM resources WHERE identity=? AND digest=?", (identity, digest)
         ).fetchone()[0]
         root = root or resource_id
@@ -233,12 +235,13 @@ class ResourceStore:
         """
         # Store outgoing reference text once per occurrence, since the same
         # payload can appear in different Bundle contexts.
-        for path, field in _walk_fields(resource, self.types):
+        for field in _walk_fields(resource, self.types):
             key, value, container = field.key, field.value, field.parent
             unknown = field.datatype is None
             local_canonical = (field.datatype == 'canonical' and isinstance(value, str)
                                and value.startswith('#') and len(value) > 1)
             if (key == "reference" and (field.parent_type == 'Reference' or unknown)) or local_canonical:
+                path = _display_path(field.path)
                 if isinstance(value, str) and value:
                     self.db.execute("INSERT INTO resource_references(occurrence_id,source_resource_id,path,literal,kind,status) VALUES (?,?,?,?,?,?)",
                                     (occurrence_id, resource_id, path, value, "literal", "pending"))
@@ -249,6 +252,7 @@ class ResourceStore:
                        (unknown and set(container) <= {"id", "extension", "type", "identifier", "display"}))):
                 # Reference.identifier names a target by business identifier,
                 # not by resource URL. Do not guess a match against patient IDs.
+                path = _display_path(field.path)
                 self.db.execute("INSERT INTO resource_references(occurrence_id,source_resource_id,path,kind,status) VALUES (?,?,?,?,?)",
                                 (occurrence_id, resource_id, path, "logical", "logical_unresolved"))
                 self.issue("logical_reference_unresolved", resource_id=resource_id, detail=path)
@@ -279,7 +283,7 @@ class ResourceStore:
 
 
 def _walk_fields(value, types):
-    """Yield typed fields with index display paths, excluding containment.
+    """Yield typed fields relevant to reference inspection, excluding containment.
 
     A field named 'reference' is not necessarily Reference.reference:
     CarePlan.activity.reference is an object, Claim.related.reference is an
@@ -292,10 +296,15 @@ def _walk_fields(value, types):
                 or field.reason == 'embedded_resource_preserved'
                 or (not isinstance(field.key, str) and field.datatype != 'canonical')):
             continue
-        path = ''
-        for kind, key in field.path:
-            if kind == 'key':
-                path += ('.' if path else '') + key
-            else:
-                path += f'[{key}]'
-        yield path, field
+        yield field
+
+
+def _display_path(path):
+    """Format paths only for actual references, rather than every JSON field."""
+    result = ''
+    for kind, key in path:
+        if kind == 'key':
+            result += ('.' if result else '') + key
+        else:
+            result += f'[{key}]'
+    return result

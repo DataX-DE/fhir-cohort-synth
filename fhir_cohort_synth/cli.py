@@ -32,12 +32,8 @@ def perturb_command(args):
         return 2
     print(f"Perturbation: {report['status']}. {report['counts']['root_resources']} resource roots; "
           f"{report['validation']['changes_checked']} changed fields verified.")
-    if args.command == 'run':
-        print(f"Created {report['export']['files_checked']} source-layout files in perturbed/fhir/; "
-              "the source index is in index/.")
-    else:
-        print(f"Created {report['export']['files_checked']} source-layout files in fhir/, "
-              "plus perturbation-state.sqlite and perturbation-report.json.")
+    print(f"Created {report['export']['files_checked']} source-layout files in result/fhir/ "
+          "and reports in result/reports/; databases are in intermediates/.")
     print("Outputs are local perturbed source-derived data. No privacy or full profile-conformance guarantee is made.")
     return 0
 

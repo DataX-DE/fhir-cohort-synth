@@ -2,17 +2,23 @@
 
 The pipeline keeps the source resources and changes selected fields. It does
 not generate new patient histories or draw records from field distributions.
-Start with `workflow.py: run_export()`: it calls ingestion and perturbation,
-stores them in `index/` and `perturbed/`, and records overall status in `run.json`.
+Start with `workflow.py: run_export()`: it prepares a fresh destination, runs the
+ingestion and perturbation stages, and records overall status in
+`intermediates/run.json`. Databases and temporary files stay in `intermediates/`;
+`result/` contains `fhir/` for the perturbed resource files and `reports/` for
+the completed ingestion and perturbation reports.
 Its helpers handle each phase.
 
 | Stage | Start here | What it produces |
 | --- | --- | --- |
 | Ingest | `ingest.py: ingest()` | `cohort.sqlite`: complete source payloads, identities, references and patient membership |
-| Perturb | `perturbation.py: perturb()` | Source-named files in `fhir/`, a local state database and a coverage report |
+| Perturb | `perturbation.py: perturb()` | Source-named files in `result/fhir/`, reports in `result/reports/`, state in `intermediates/` |
 
 These modules live under `fhir_cohort_synth/`. `fhir_synth.py` is the launcher;
 `cli.py` parses options, calls the public functions and formats safe console errors.
+The public stage functions prepare their own fresh destinations. The workflow
+calls their internal `_ingest()` and `_perturb()` functions after reserving one
+shared destination, so both stages use the same `intermediates/` directory.
 
 For ingestion details, `Store` is the small entry point. Its `add_document()`
 calls `ResourceStore` in `resource_store.py`; `resolve()` calls

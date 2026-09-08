@@ -47,6 +47,9 @@ def open_source(path):
         source = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
         source.row_factory = sqlite3.Row
         source.execute("PRAGMA query_only=ON")
+        # Match the bounded writer cache. Reference/ownership joins revisit
+        # index pages on large cohorts; the default 2 MiB caused repeated reads.
+        source.execute("PRAGMA cache_size=-65536")
         source.execute("BEGIN")
         runs = source.execute("SELECT status,schema_version,fhir_version FROM run").fetchall()
         if len(runs) != 1 or runs[0]["schema_version"] not in (1, 2):

@@ -135,10 +135,10 @@ class PerturbationTests(unittest.TestCase):
     def run_engine(self, **kwargs):
         self.header = perturb(self.cohort, self.output, **kwargs)
         self.records = [loads(line) for line in iter_export_lines(self.output)]
-        self.db = sqlite3.connect(self.output/'perturbation-state.sqlite')
+        self.db = sqlite3.connect(self.output/'intermediates/perturbation-state.sqlite')
         self.db.row_factory = sqlite3.Row
         self.addCleanup(self.db.close)
-        self.report = loads((self.output/'perturbation-report.json').read_text())
+        self.report = loads((self.output/'result/reports/perturbation-report.json').read_text())
         # Numeric summaries are hospital-local SQLite data, never report fields.
         self.numeric_contexts = [dict(row) for row in self.db.execute('SELECT * FROM numeric_contexts ORDER BY id')]
         for context in self.numeric_contexts:
@@ -289,7 +289,7 @@ class PerturbationTests(unittest.TestCase):
         self.assertTrue(all(v.startswith('Dummy-') for v in result[0]['name'][0]['given']))
         self.assertEqual(result[0]['text'], p['text'])
         self.assertEqual(result[0]['identifier'], result[1]['identifier'])
-        self.assertNotIn('SENSITIVE-EXAMPLE', (self.output/'perturbation-report.json').read_text())
+        self.assertNotIn('SENSITIVE-EXAMPLE', (self.output/'result/reports/perturbation-report.json').read_text())
 
     def test_unknown_extensions_companions_attachments_and_path_collisions(self):
         p = resource('Patient', 'p', birthDate='1980-01-01', _birthDate={'extension': [{'url': 'urn:x', 'valueDate': '1980-01-01'}]},
@@ -516,7 +516,7 @@ class PerturbationTests(unittest.TestCase):
         source_value = Decimal('12345.67890123456789')
         self.prepare([resource('Patient', 'p'), observation('only-measurement', source_value)])
         self.run_engine()
-        report_text = (self.output / 'perturbation-report.json').read_text()
+        report_text = (self.output / 'result/reports/perturbation-report.json').read_text()
         forbidden = {'numeric_contexts', 'statistics', 'before', 'after', 'relative',
                      'absolute_relative', 'minimum', 'maximum', 'quantiles',
                      'settings', 'privacy_guarantee', 'limitations'}
@@ -540,13 +540,13 @@ class PerturbationTests(unittest.TestCase):
         before = hashlib.sha256(self.cohort.read_bytes()).hexdigest()
         self.run_engine()
         second = self.root/'second'
-        perturb(self.cohort, second, reuse_key_from=self.output / 'perturbation-state.sqlite')
-        self.assertEqual((self.output/'fhir/source.ndjson').read_bytes(), (second/'fhir/source.ndjson').read_bytes())
+        perturb(self.cohort, second, reuse_key_from=self.output / 'intermediates/perturbation-state.sqlite')
+        self.assertEqual((self.output/'result/fhir/source.ndjson').read_bytes(), (second/'result/fhir/source.ndjson').read_bytes())
         self.assertEqual(before, hashlib.sha256(self.cohort.read_bytes()).hexdigest())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o700)
-        for name in ('fhir/source.ndjson', 'perturbation-state.sqlite', 'perturbation-report.json'):
+        for name in ('result/fhir/source.ndjson', 'intermediates/perturbation-state.sqlite', 'result/reports/perturbation-report.json'):
             self.assertEqual((self.output/name).stat().st_mode & 0o777, 0o600)
-        self.assertFalse(list(self.output.glob('*-wal')))
+        self.assertFalse(list(self.output.rglob('*-wal')))
 
     def test_zero_strength_and_date_range_still_replace_identity(self):
         p = resource('Patient', 'p', birthDate='1980-01-01')
@@ -616,8 +616,8 @@ class PerturbationTests(unittest.TestCase):
         with open_source(legacy_path) as (_, run):
             self.assertEqual(run['schema_version'], 1)
         perturb(legacy_path, self.root / 'legacy-output')
-        perturb(self.cohort, self.output, reuse_key_from=self.root / 'legacy-output/perturbation-state.sqlite')
-        for name in ('fhir/source.ndjson', 'perturbation-report.json'):
+        perturb(self.cohort, self.output, reuse_key_from=self.root / 'legacy-output/intermediates/perturbation-state.sqlite')
+        for name in ('result/fhir/source.ndjson', 'result/reports/perturbation-report.json'):
             self.assertEqual((self.root / 'legacy-output' / name).read_bytes(),
                              (self.output / name).read_bytes())
         self.assertEqual(legacy_path.read_bytes(), before)
@@ -673,7 +673,7 @@ class PerturbationTests(unittest.TestCase):
             with patch.object(engine, method, side_effect=exception):
                 with self.assertRaises(type(exception)):
                     perturb(self.cohort, output)
-            with closing(sqlite3.connect(output/'perturbation-state.sqlite')) as db, db:
+            with closing(sqlite3.connect(output/'intermediates/perturbation-state.sqlite')) as db, db:
                 self.assertIn(db.execute('SELECT status FROM run').fetchone()[0], ['failed', 'interrupted'])
             with self.assertRaises(InputError):
                 perturb(self.cohort, output)
@@ -705,7 +705,7 @@ class PerturbationTests(unittest.TestCase):
         with patch.object(engine, '_write', side_effect=corrupt):
             with self.assertRaisesRegex(InputError, 'field-specific percentage'):
                 perturb(self.cohort, self.output)
-        with closing(sqlite3.connect(self.output / 'perturbation-state.sqlite')) as db:
+        with closing(sqlite3.connect(self.output / 'intermediates/perturbation-state.sqlite')) as db:
             self.assertEqual(db.execute('SELECT status FROM run').fetchone()[0], 'failed')
 
     def test_cli_and_private_errors(self):
@@ -723,7 +723,7 @@ class PerturbationTests(unittest.TestCase):
         ingest([REPO/'examples/mii-demo-bundle.json'], self.cohort.parent)
         self.run_engine()
         self.assertEqual(self.header['counts']['root_resources'], 23)
-        report = ingest([self.output/'fhir'], self.root/'reingestion')
+        report = ingest([self.output / 'result/fhir'], self.root / 'reingestion')
         self.assertNotEqual(report['status'], 'incomplete')
         with closing(sqlite3.connect(self.root/'reingestion/cohort.sqlite')) as db, db:
             self.assertEqual(db.execute("SELECT count(*) FROM resource_references WHERE status<>'resolved'").fetchone()[0], 0)

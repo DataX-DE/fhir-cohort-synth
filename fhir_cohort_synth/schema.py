@@ -33,7 +33,8 @@ CREATE TABLE resources (
  resource_type TEXT NOT NULL, logical_id TEXT, version_id TEXT, full_url TEXT,
  contained INTEGER NOT NULL, payload TEXT NOT NULL,
  UNIQUE(identity, digest));
-CREATE INDEX resource_identity ON resources(identity);
+-- UNIQUE(identity,digest) also serves identity-only lookups; a second index
+-- on identity would duplicate those writes for every imported resource.
 -- Patient grouping and type inventories need only type and row ID. This
 -- covering index avoids reading every large JSON payload to obtain them.
 CREATE INDEX resource_type ON resources(resource_type);
@@ -45,8 +46,8 @@ CREATE TABLE occurrences (
 CREATE INDEX occurrence_resource ON occurrences(resource_id);
 CREATE TABLE aliases (alias TEXT NOT NULL, resource_id INTEGER REFERENCES resources(id),
  context TEXT NOT NULL, kind TEXT NOT NULL,
- UNIQUE(alias, resource_id, context, kind));
-CREATE INDEX alias_lookup ON aliases(alias, kind, context);
+ -- Match lookup order so the uniqueness index also covers scoped resolution.
+ UNIQUE(alias, kind, context, resource_id));
 CREATE TABLE resource_references (
  id INTEGER PRIMARY KEY, occurrence_id INTEGER REFERENCES occurrences(id),
  source_resource_id INTEGER REFERENCES resources(id), path TEXT, literal TEXT,

@@ -5,6 +5,7 @@ Only a unique matching target is accepted; missing or ambiguous targets are
 recorded as issues. Repeated occurrences do not create additional candidates.
 """
 import re
+from functools import lru_cache, partial
 from urllib.parse import urlsplit
 
 # Patient/p1 and Patient/p1/_history/2 share an identity but name different
@@ -18,9 +19,17 @@ def resolve_references(db, issue):
     Missing targets become warnings; several candidates become errors.
     Identifier-only references remain logical_unresolved from ingestion.
     """
-    for ref in db.execute("SELECT * FROM resource_references WHERE kind='literal'"):
-        occurrence = db.execute("SELECT * FROM occurrences WHERE id=?", (ref["occurrence_id"],)).fetchone()
-        matches = _resolve_one(db, ref["literal"], occurrence)
+    # Aliases are complete and immutable throughout this pass. Repeated links
+    # to the same patient/encounter can reuse a bounded cache of candidate sets.
+    # The cache key includes scope and version, so namespaces stay separate.
+    candidates = lru_cache(maxsize=16384)(partial(_candidates, db))
+    for ref in db.execute("""
+        SELECT f.*, o.context, o.full_url, o.root_resource_id,
+               r.full_url AS root_full_url
+        FROM resource_references f JOIN occurrences o ON o.id=f.occurrence_id
+        JOIN resources r ON r.id=o.root_resource_id WHERE f.kind='literal'
+    """):
+        matches = _resolve_one(ref["literal"], ref, candidates)
         # Never use the first of several matches to break an ambiguity.
         target = None
         if len(matches) == 1:
@@ -39,7 +48,7 @@ def resolve_references(db, issue):
                   resource_id=ref["source_resource_id"], detail=ref["path"])
 
 
-def _resolve_one(db, literal, occurrence):
+def _resolve_one(literal, occurrence, candidates):
     """Find candidate targets using the referencing occurrence's scope.
 
     Handle local # references, relative REST references, absolute REST
@@ -51,36 +60,34 @@ def _resolve_one(db, literal, occurrence):
     if literal == "#":
         return {occurrence["root_resource_id"]}
     if literal.startswith("#"):
-        return _candidates(db, literal, "contained", f"contained:{occurrence['root_resource_id']}")
+        return candidates(literal, "contained", f"contained:{occurrence['root_resource_id']}")
     relative = RELATIVE.fullmatch(literal)
     if relative:
         alias, version = f"{relative[1]}/{relative[2]}", relative[3]
         # Absolute source identity determines the server namespace. A same-ID
         # resource from another server must never be used as a fallback.
-        root_url = db.execute(
-            "SELECT full_url FROM resources WHERE id=?", (occurrence["root_resource_id"],)
-        ).fetchone()[0]
+        root_url = occurrence["root_full_url"]
         source = rest_parts(occurrence["full_url"] or root_url)
         if source:
-            return _candidates(db, source[0] + alias, "absolute", version=version)
+            return candidates(source[0] + alias, "absolute", version=version)
         # With no known server base, prefer the enclosing Bundle/file.
         # Only if that identity is absent locally do we search other files.
-        local = _candidates(db, alias, "relative", occurrence["context"])
+        local = candidates(alias, "relative", occurrence["context"])
         if local:
             # A local identity with the wrong version must not cause a
             # search in an unrelated Bundle/server for that version.
             if version is None:
                 return local
-            return _candidates(db, alias, "relative", occurrence["context"], version)
-        return _candidates(db, alias, "relative", version=version)
+            return candidates(alias, "relative", occurrence["context"], version)
+        return candidates(alias, "relative", version=version)
     absolute = rest_parts(literal)
     if absolute:
         # Match the declared server and revision exactly. Falling back to
         # type/ID could attach a resource from an unrelated server.
         base, alias, version = absolute
-        return _candidates(db, base + alias, "absolute", version=version)
+        return candidates(base + alias, "absolute", version=version)
     # URNs and non-REST fullUrls are resolved by exact identity only.
-    return _candidates(db, literal, "absolute")
+    return candidates(literal, "absolute")
 
 
 def _candidates(db, alias, kind, context=None, version=None):

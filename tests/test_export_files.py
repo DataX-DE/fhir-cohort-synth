@@ -50,10 +50,16 @@ class ExportFilesTests(unittest.TestCase):
         before = {p.name: p.read_bytes() for p in self.inputs.iterdir()}
         self.prepare()
         report = perturb(self.cohort, self.output)
-        files = self.output / 'fhir'
+        files = self.output / 'result/fhir'
+        self.assertEqual({p.name for p in self.output.iterdir()}, {'intermediates', 'result'})
+        self.assertEqual({p.name for p in (self.output / 'intermediates').iterdir()},
+                         {'perturbation-state.sqlite'})
+        self.assertEqual(report['export']['directory'], 'result/fhir')
         self.assertEqual({p.name for p in files.iterdir()}, set(before))
+        self.assertEqual({p.name for p in (self.output / 'result').iterdir()}, {'fhir', 'reports'})
+        self.assertEqual({p.name for p in (self.output / 'result/reports').iterdir()}, {'perturbation-report.json'})
         self.assertFalse((self.output / 'perturbed.ndjson').exists())
-        self.assertFalse((self.output / '.perturbed.ndjson.partial').exists())
+        self.assertFalse((self.output / 'intermediates/.perturbed.ndjson.partial').exists())
         with gzip.open(files / 'MimicObservationED.ndjson.gz', 'rt') as stream:
             actual = [loads(line) for line in stream]
         self.assertEqual([r['valueString'] for r in actual], ['first result', 'second result'])
@@ -70,9 +76,9 @@ class ExportFilesTests(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in self.inputs.iterdir()})
 
         second = self.root / 'second'
-        perturb(self.cohort, second, reuse_key_from=self.output / 'perturbation-state.sqlite')
+        perturb(self.cohort, second, reuse_key_from=self.output / 'intermediates/perturbation-state.sqlite')
         for name in before:
-            self.assertEqual((files / name).read_bytes(), (second / 'fhir' / name).read_bytes())
+            self.assertEqual((files / name).read_bytes(), (second / 'result/fhir' / name).read_bytes())
 
     def test_nested_paths_and_single_json_keep_their_formats(self):
         self.write('a/patient.json.gz', [{'resourceType': 'Patient', 'id': 'p'}])
@@ -82,7 +88,7 @@ class ExportFilesTests(unittest.TestCase):
         report = perturb(self.cohort, self.output)
         self.assertEqual([p['file'] for p in report['export']['files']], ['a/patient.json.gz', 'b/measurements.jsonl'])
         self.assertEqual([p['format'] for p in report['export']['files']], ['json', 'ndjson'])
-        with gzip.open(self.output / 'fhir/a/patient.json.gz', 'rt') as stream:
+        with gzip.open(self.output / 'result/fhir/a/patient.json.gz', 'rt') as stream:
             self.assertEqual(loads(stream.read())['resourceType'], 'Patient')
 
     def test_duplicate_roots_stay_in_their_first_file(self):
@@ -92,7 +98,7 @@ class ExportFilesTests(unittest.TestCase):
         self.prepare()
         report = perturb(self.cohort, self.output)
         self.assertEqual([p['records'] for p in report['export']['files']], [1, 0])
-        with gzip.open(self.output / 'fhir/b.ndjson.gz', 'rb') as stream:
+        with gzip.open(self.output / 'result/fhir/b.ndjson.gz', 'rb') as stream:
             self.assertEqual(stream.read(), b'')
 
     def test_bundle_roots_have_an_explicit_ndjson_extension(self):
@@ -114,6 +120,24 @@ class ExportFilesTests(unittest.TestCase):
             perturb(self.cohort, self.output)
         self.assertFalse(self.output.exists())
 
+    def test_report_names_in_source_do_not_collide_with_generated_reports(self):
+        for number, name in enumerate(('report.json', 'PERTURBATION-REPORT.JSON',
+                                      'report.txt/patient.json', 'perturbation-report.json/patient.json')):
+            with self.subTest(name=name):
+                self.inputs = self.root / f'input-{number}'
+                self.inputs.mkdir()
+                # A second file fixes the common parent for nested paths.
+                self.write('observation.ndjson', [{'resourceType': 'Observation', 'id': 'o'}])
+                self.write(name, [{'resourceType': 'Patient', 'id': 'p'}])
+                self.cohort = self.root / f'index-{number}/cohort.sqlite'
+                self.output = self.root / f'output-{number}'
+                self.prepare()
+                perturb(self.cohort, self.output)
+                resource = loads((self.output / 'result/fhir' / name).read_text())
+                self.assertEqual(resource['resourceType'], 'Patient')
+                report = loads((self.output / 'result/reports/perturbation-report.json').read_text())
+                self.assertEqual(report['counts']['root_resources'], 2)
+
     def test_interrupted_export_never_publishes_completion(self):
         self.write('patient.ndjson', [{'resourceType': 'Patient', 'id': 'p'}])
         self.prepare()
@@ -125,9 +149,11 @@ class ExportFilesTests(unittest.TestCase):
 
         with patch.object(engine, 'write_source_files', interrupt), self.assertRaises(KeyboardInterrupt):
             perturb(self.cohort, self.output)
-        self.assertFalse((self.output / 'fhir').exists())
-        self.assertFalse((self.output / 'perturbation-report.json').exists())
-        with closing(sqlite3.connect(self.output / 'perturbation-state.sqlite')) as db:
+        self.assertFalse((self.output / 'result').exists())
+        self.assertEqual({p.name for p in self.output.iterdir()}, {'intermediates'})
+        self.assertTrue((self.output / 'intermediates/.result.partial').is_dir())
+        self.assertFalse((self.output / 'result/reports/perturbation-report.json').exists())
+        with closing(sqlite3.connect(self.output / 'intermediates/perturbation-state.sqlite')) as db:
             self.assertEqual(db.execute('SELECT status FROM run').fetchone()[0], 'interrupted')
 
 

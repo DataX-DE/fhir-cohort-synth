@@ -106,7 +106,7 @@ def write_source_files(source, verified_stream, destination, plans):
             manifest.append(entry)
         if next(roots, None) is not None or stream.read(1):
             raise InputError('The exported resource population differs from the verified stream.')
-    return {'layout': 'source_files', 'directory': 'fhir', 'files': manifest,
+    return {'layout': 'source_files', 'directory': 'result/fhir', 'files': manifest,
             'files_checked': len(manifest), 'records': sum(p['records'] for p in plans),
             'decompressed_bytes_verified': True,
             'resource_stream_sha256': stream_digest.hexdigest()}
@@ -117,9 +117,9 @@ def iter_export_lines(output):
     # Manifest order preserves the same root ordering used by the change ledger.
     from .jsonio import loads
 
-    report = loads((output / 'perturbation-report.json').read_text())
+    report = loads((output / 'result/reports/perturbation-report.json').read_text())
     for entry in report['export']['files']:
-        path = output / 'fhir' / entry['file']
+        path = output / 'result/fhir' / entry['file']
         opener = gzip.open if entry['compressed'] else open
         with opener(path, 'rt', encoding='utf-8') as stream:
             yield from stream

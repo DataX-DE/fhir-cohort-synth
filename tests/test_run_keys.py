@@ -87,12 +87,12 @@ class RunKeyTests(unittest.TestCase):
         return output
 
     def state(self, output):
-        with closing(sqlite3.connect(output / 'perturbation-state.sqlite')) as db:
+        with closing(sqlite3.connect(output / 'intermediates/perturbation-state.sqlite')) as db:
             db.row_factory = sqlite3.Row
             return dict(db.execute('SELECT * FROM run').fetchone())
 
     def records(self, output):
-        return [loads(line) for line in (output / 'fhir/source.ndjson').read_text().splitlines()]
+        return [loads(line) for line in (output / 'result/fhir/source.ndjson').read_text().splitlines()]
 
     def test_fresh_keys_change_all_generated_identity_fields_and_quantity_draws(self):
         with patch.object(randomness.secrets, 'token_bytes', side_effect=[KEY_A, KEY_B]) as entropy:
@@ -107,17 +107,17 @@ class RunKeyTests(unittest.TestCase):
         self.assertNotEqual(a[1]['valueQuantity']['value'], b[1]['valueQuantity']['value'])
         for output, records in ((first, a), (second, b)):
             self.assertEqual(records[1]['subject']['reference'], 'Patient/' + records[0]['id'])
-            with closing(sqlite3.connect(output / 'perturbation-state.sqlite')) as db:
+            with closing(sqlite3.connect(output / 'intermediates/perturbation-state.sqlite')) as db:
                 identity, low, high, days = db.execute('SELECT identity,minimum_days,maximum_days,days FROM patient_parameters').fetchone()
                 self.assertEqual(days, patient_days(self.state(output)['run_key'], identity, low, high))
 
     def test_reuse_reproduces_nondefault_run_without_modifying_inputs(self):
         first = self.run_export('first', strength='.03', date_shift_days=7)
-        key_file = first / 'perturbation-state.sqlite'
+        key_file = first / 'intermediates/perturbation-state.sqlite'
         before = {path: path.read_bytes() for path in (self.cohort, key_file)}
         with patch.object(engine, 'new_key', side_effect=AssertionError('must not generate a new key')):
             second = self.run_export('second', strength=Decimal('.03'), date_shift_days=7, reuse_key_from=key_file)
-        for name in ('fhir/source.ndjson', 'perturbation-report.json'):
+        for name in ('result/fhir/source.ndjson', 'result/reports/perturbation-report.json'):
             self.assertEqual((first / name).read_bytes(), (second / name).read_bytes())
         self.assertEqual(before, {path: path.read_bytes() for path in before})
         self.assertEqual(self.state(first)['run_key'], self.state(second)['run_key'])
@@ -134,7 +134,7 @@ class RunKeyTests(unittest.TestCase):
             db.execute('INSERT INTO run VALUES (1,2)')
             db.commit()
         alias = self.root / 'alias.sqlite'
-        alias.symlink_to(first / 'perturbation-state.sqlite')
+        alias.symlink_to(first / 'intermediates/perturbation-state.sqlite')
         for path in (self.root / 'missing.sqlite', corrupt, keyless, alias):
             with self.subTest(path=path.name), patch.object(engine, 'new_key') as generate:
                 with self.assertRaises(InputError):
@@ -151,7 +151,7 @@ class RunKeyTests(unittest.TestCase):
                  ('settings_json', '{}'), ('settings_json', '{malformed')]
         for index, (column, value) in enumerate(cases):
             bad = self.root / f'invalid-{index}.sqlite'
-            shutil.copyfile(first / 'perturbation-state.sqlite', bad)
+            shutil.copyfile(first / 'intermediates/perturbation-state.sqlite', bad)
             with closing(sqlite3.connect(bad)) as db:
                 # Deliberately create damaged inputs that the reader must reject.
                 if value is None:
@@ -165,7 +165,7 @@ class RunKeyTests(unittest.TestCase):
             self.assertFalse((self.root / 'invalid').exists())
         for options in ({'strength': '.03'}, {'date_shift_days': 7}):
             with self.assertRaisesRegex(InputError, 'strength and date range'):
-                self.run_export('invalid', reuse_key_from=first / 'perturbation-state.sqlite', **options)
+                self.run_export('invalid', reuse_key_from=first / 'intermediates/perturbation-state.sqlite', **options)
 
     def test_key_stays_in_committed_local_state_and_never_in_export_or_console(self):
         console = io.StringIO()
@@ -182,7 +182,7 @@ class RunKeyTests(unittest.TestCase):
                 text += path.read_text()
         for representation in (KEY_A.hex(), base64.b64encode(KEY_A).decode(), repr(KEY_A)):
             self.assertNotIn(representation, text)
-        report = loads((output / 'perturbation-report.json').read_text())
+        report = loads((output / 'result/reports/perturbation-report.json').read_text())
         self.assertFalse({'run_key', 'settings', 'numeric_contexts'}.intersection(report))
 
     def test_interruption_retains_committed_key_and_cannot_be_reused(self):
@@ -199,7 +199,7 @@ class RunKeyTests(unittest.TestCase):
         self.assertEqual(self.state(output)['status'], 'interrupted')
         self.assertEqual(self.state(output)['run_key'], KEY_A)
         with self.assertRaisesRegex(InputError, 'completed'):
-            self.run_export('retry', reuse_key_from=output / 'perturbation-state.sqlite')
+            self.run_export('retry', reuse_key_from=output / 'intermediates/perturbation-state.sqlite')
 
     def test_key_generation_failure_is_masked_without_creating_perturbation_output(self):
         output = self.root / 'failed'
@@ -228,17 +228,17 @@ class RunKeyTests(unittest.TestCase):
         first = self.root / 'full'
         with redirect_stdout(io.StringIO()):
             self.assertEqual(main(['run', '--input', str(self.source), '--output', str(first)]), 0)
-        settings = loads(self.state(first / 'perturbed')['settings_json'])
+        settings = loads(self.state(first)['settings_json'])
         self.assertEqual(settings, {'strength': Decimal('.16'), 'date_shift_days': 30})
         second = self.root / 'full-replay'
-        run_export([self.source], second, reuse_key_from=first / 'perturbed/perturbation-state.sqlite')
-        self.assertEqual((first / 'perturbed/fhir/source.ndjson').read_bytes(),
-                         (second / 'perturbed/fhir/source.ndjson').read_bytes())
+        run_export([self.source], second, reuse_key_from=first / 'intermediates/perturbation-state.sqlite')
+        self.assertEqual((first / 'result/fhir/source.ndjson').read_bytes(),
+                         (second / 'result/fhir/source.ndjson').read_bytes())
         failed = self.root / 'full-failed'
         with self.assertRaises(InputError):
             run_export([self.source], failed, reuse_key_from=self.root / 'missing.sqlite')
-        self.assertEqual(loads((failed / 'run.json').read_text()), {'status': 'failed', 'phase': 'perturbation'})
-        self.assertFalse((failed / 'perturbed').exists())
+        self.assertEqual(loads((failed / 'intermediates/run.json').read_text()), {'status': 'failed', 'phase': 'perturbation'})
+        self.assertFalse((failed / 'result').exists())
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             main(['perturb', '--input', str(self.cohort), '--output', str(self.root / 'old-cli'), '--seed', '42'])
 

@@ -18,6 +18,8 @@ differential-privacy guarantee is made; privacy assessment remains outside scope
    The hospital does not need to manage stage inputs.
 5. Publish source-named export files with their NDJSON/JSONL and gzip formats,
    source ordering and per-file checksums, rather than one merged export.
+   Output has two directories: `result/`, split into `fhir/` and `reports/`,
+   and `intermediates/` for databases, status and temporary files.
 
 See [the perturbation guide](perturbation.md) for the API, command, exact field
 handling and worked example. The implementation uses Python's standard library

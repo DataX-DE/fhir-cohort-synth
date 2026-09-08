@@ -387,6 +387,16 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
     output = Path(output_dir).absolute()
     if output.exists() or output.is_symlink():
         raise PerturbationError('Output already exists; choose a new output directory.')
+    return _perturb(cohort_db, output, settings, reuse_key_from)
+
+
+def _perturb(cohort_db, output, settings, reuse_key_from=None, *, output_created=False):
+    """Write result/ and intermediates/ for either public entry point.
+
+    Only run_export() supplies output_created=True: it has already reserved the
+    fresh directory and placed its ingestion index in intermediates/. Direct
+    perturb() calls reserve their destination after validating the source/key.
+    """
     types = TypeIndex()
     with open_source(cohort_db) as (source, source_run):
         if source_run['fhir_version'] != '4.0.1':
@@ -398,8 +408,11 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
         run_key = (new_key() if reuse_key_from is None else
                    read_reuse_key(reuse_key_from, settings, fingerprint, types.metadata))
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.mkdir(mode=0o700)
-        ledger = Ledger(output / 'perturbation-state.sqlite', settings, fingerprint, types.metadata, run_key)
+        if not output_created:
+            output.mkdir(mode=0o700)
+            (output / 'intermediates').mkdir(mode=0o700)
+        intermediates = output / 'intermediates'
+        ledger = Ledger(intermediates / 'perturbation-state.sqlite', settings, fingerprint, types.metadata, run_key)
         db = ledger.db
         try:
             issues = [dict(r) for r in source.execute('SELECT severity,code,count(*) frequency FROM issues GROUP BY severity,code ORDER BY severity,code')]
@@ -410,7 +423,7 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
             # 2. Write a private partial export and its field-by-field audit trail.
             db.execute("UPDATE run SET phase='writing'")
             db.commit()
-            partial = output / '.perturbed.ndjson.partial'
+            partial = intermediates / '.perturbed.ndjson.partial'
             _write(source, ledger, types, settings, partial)
             # 3. Reread what was actually written before reporting success.
             db.execute("UPDATE run SET phase='validation'")
@@ -420,8 +433,9 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
             # The packager rereads each final file and checks its exact bytes.
             db.execute("UPDATE run SET phase='exporting'")
             db.commit()
-            export_partial = output / '.fhir.partial'
-            exported = write_source_files(source, partial, export_partial, files)
+            export_partial = intermediates / '.result.partial'
+            export_partial.mkdir(mode=0o700)
+            exported = write_source_files(source, partial, export_partial / 'fhir', files)
             # 4. Measure the actual changes, including changes lost to rounding.
             db.execute("UPDATE run SET phase='aggregation'")
             db.commit()
@@ -429,14 +443,18 @@ def perturb(cohort_db, output_dir, *, strength=0.16, date_shift_days=30, reuse_k
             header = build_report(ledger, source_run['status'], validation)
             header['export'] = exported
             status = header['status']
-            # 5. Publish both files before the final status becomes complete.
-            # A crash between renames still leaves an unusable in-progress run.
+            # 5. Stage reports in their own folder, then publish the whole
+            # result/ directory. Only the two known ingestion reports are
+            # moved; databases, keys and temporary work stay in intermediates/.
             db.execute("UPDATE run SET phase='reporting'")
             db.commit()
-            report_partial = output / '.perturbation-report.json.partial'
-            write_report(report_partial, header, ledger)
-            export_partial.rename(output / 'fhir')
-            report_partial.rename(output / 'perturbation-report.json')
+            reports = export_partial / 'reports'
+            reports.mkdir(mode=0o700)
+            write_report(reports / 'perturbation-report.json', header, ledger)
+            if output_created:
+                for name in ('report.json', 'report.txt'):
+                    (intermediates / name).rename(reports / name)
+            export_partial.rename(output / 'result')
             partial.unlink()
             db.execute('UPDATE run SET status=?,phase=?', (status, 'complete'))
             db.commit()

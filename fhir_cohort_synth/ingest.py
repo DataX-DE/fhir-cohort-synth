@@ -156,6 +156,15 @@ def ingest(inputs, output, base_url=None):
     output.parent.mkdir(parents=True, exist_ok=True)
     # mkdir is exclusive, so a concurrent run cannot replace this directory.
     output.mkdir(mode=0o700)
+    return _ingest(files, output, base_url)
+
+
+def _ingest(files, output, base_url=None):
+    """Write into a private directory already prepared by ingest() or run_export().
+
+    Both callers validate input paths and reserve a fresh output first. Keeping
+    directory setup separate lets the workflow put all state in intermediates/.
+    """
     db_path = output / "cohort.sqlite"
     with db_path.open("xb"):
         pass
