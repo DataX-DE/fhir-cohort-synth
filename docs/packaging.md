@@ -35,12 +35,14 @@ a clean Ubuntu container with no Python installed and networking disabled.
 Windows testing uses the native runner with Python removed from PATH; it does
 not claim that the runner has no Python installation.
 
-Verified on 8 September 2026 in
-[build 34175669073](https://github.com/DataX-DE/fhir-cohort-synth/actions/runs/34175669073):
-all 137 tests passed on Linux; Windows passed with the two existing POSIX-only
+Version 0.1.1 verified on 8 September 2026 in
+[build 34180373341](https://github.com/DataX-DE/fhir-cohort-synth/actions/runs/34180373341):
+all 144 tests passed on Linux; Windows passed with the two existing POSIX-only
 tests skipped. Both extracted-package checks passed. The clean offline Linux
 run completed with 23 invented resource roots. The archives use Python 3.13.15
-and PyInstaller 6.22.2 and record source commit `c6b8473` in `build-info.json`.
+and PyInstaller 6.22.2 and record source commit `f9f0250` in `build-info.json`.
+Packaged gzip runs also verify alphanumeric names and replacement phone, email
+and address values, including identical output when the local run key is reused.
 
 To build manually, use a fresh Python 3.13 virtual environment on the target OS:
 
