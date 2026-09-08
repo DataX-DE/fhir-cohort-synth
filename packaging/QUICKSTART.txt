@@ -1,6 +1,42 @@
 FHIR cohort synth
 ================
 
+Expected input
+--------------
+Provide a FHIR R4 (4.0.1) export saved as UTF-8 JSON. The --input path can be
+one file or a folder. All supported files in its subfolders are included.
+
+Supported file formats:
+  .json                 One FHIR resource object or a FHIR Bundle object.
+                        Each Bundle entry must contain its resource in
+                        entry[].resource.
+  .ndjson or .jsonl      One complete FHIR resource object per line.
+  .json.gz              Gzip-compressed JSON.
+  .ndjson.gz/.jsonl.gz   Gzip-compressed line-delimited JSON.
+
+Each resource must have a resourceType field, such as "Patient", "Encounter"
+or "Observation". Keep the original nested fields, resource IDs, references
+and Bundle entry.fullUrl values.
+
+Include the patients and their linked resources together in the input export.
+Resource types can be split across files; no particular filenames or file order
+are required. For example:
+
+  FHIR export/
+    Patient.ndjson
+    Encounter.ndjson
+    Observation.ndjson.gz
+    other-resources/
+      Condition.jsonl
+
+Use a single export snapshot. For a paginated export, include all downloaded
+pages; the tool does not download resources from links. History Bundles are
+not supported. Keep unrelated JSON files outside the input folder.
+
+XML, CSV and a top-level JSON array of resources are not supported. Extract
+ZIP or TAR exports first, then pass the extracted folder; gzip files can be
+read directly.
+
 Windows x64 (PowerShell)
 -----------------------
 Open PowerShell in the extracted folder:
@@ -27,7 +63,7 @@ Linux:
 
 The output folder must be new and outside the input folder. For another run,
 choose a new name, such as example-output-2. Existing results are never replaced.
-Quote paths containing spaces. Inputs may be JSON, NDJSON or JSONL, including gzip.
+Quote paths containing spaces.
 
 While it runs
 -------------
