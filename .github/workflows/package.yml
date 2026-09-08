@@ -1,0 +1,72 @@
+name: Build offline packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'packaging/**']
+    paths:
+      - 'fhir_cohort_synth/**'
+      - 'fhir_synth.py'
+      - 'pyproject.toml'
+      - 'packaging/**'
+      - 'tools/*package.py'
+      - 'tests/**'
+      - 'examples/**'
+      - '.github/workflows/package.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: windows-x64
+            extension: zip
+          - os: ubuntu-22.04
+            target: linux-x64
+            extension: tar.gz
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - name: Install build tool
+        run: python -m pip install -r packaging/requirements-build.txt
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Build native executable and archive
+        run: python tools/build_package.py
+      - name: Test extracted package
+        shell: bash
+        run: python tools/check_package.py dist/*-${{ matrix.target }}.${{ matrix.extension }}
+      - name: Check Linux without Python or network
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p work/offline-package
+          tar -xzf dist/*-linux-x64.tar.gz -C work/offline-package
+          docker pull ubuntu:22.04
+          docker run --rm --network none --user "$(id -u):$(id -g)" \
+            --mount "type=bind,src=$PWD/work/offline-package,dst=/package,readonly" \
+            ubuntu:22.04 sh -c '
+              test ! -x /usr/bin/python3 &&
+              cd /package/fhir-cohort-synth-* &&
+              ./fhir-cohort-synth run --input examples/mii-demo-bundle.json --output /tmp/example-output
+            '
+      - name: Upload checked archive and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: fhir-cohort-synth-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30

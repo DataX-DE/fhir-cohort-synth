@@ -6,6 +6,11 @@ full dates and identity fields. No model training or runtime downloads are neede
 
 ## Run an export
 
+For Windows and Linux packages with Python included, see
+[offline packaging](docs/packaging.md). Extract the package and use
+`fhir-cohort-synth.exe run` (Windows) or `./fhir-cohort-synth run` (Linux), with
+the same `--input` and `--output` arguments below.
+
 Requires **Python 3.11+**, using only the standard library and SQLite.
 From the repository directory:
 

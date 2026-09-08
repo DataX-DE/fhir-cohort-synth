@@ -1,0 +1,9 @@
+Python.txt: https://raw.githubusercontent.com/python/cpython/3.13/LICENSE
+FHIR-CC0.txt: https://raw.githubusercontent.com/spdx/license-list-data/main/text/CC0-1.0.txt
+zlib.txt: https://raw.githubusercontent.com/madler/zlib/v1.3.1/LICENSE
+OpenSSL.txt: https://raw.githubusercontent.com/openssl/openssl/openssl-3.0.18/LICENSE.txt
+libffi.txt: https://raw.githubusercontent.com/libffi/libffi/v3.4.4/LICENSE
+liblzma.txt: https://raw.githubusercontent.com/tukaani-project/xz/v5.6.4/COPYING
+liblzma-0BSD.txt: https://raw.githubusercontent.com/tukaani-project/xz/v5.6.4/COPYING.0BSD
+bzip2.txt: https://sourceware.org/git/?p=bzip2.git;a=blob_plain;f=LICENSE;hb=bzip2-1.0.8
+Microsoft-runtime.txt: https://raw.githubusercontent.com/python/cpython/3.13/PC/crtlicense.txt

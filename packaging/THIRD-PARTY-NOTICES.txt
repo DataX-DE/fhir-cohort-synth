@@ -1,0 +1,30 @@
+Bundled components
+==================
+
+The application bundles Python and selected standard-library dependencies.
+Their notices are included in this directory. These component licenses do not
+assign a new license to the fhir-cohort-synth application itself.
+
+Python: Python Software Foundation License and included component notices.
+https://www.python.org/doc/versions/
+
+PyInstaller bootloader/runtime: GPL version 2 with the bootloader exception.
+https://pyinstaller.org/en/stable/license.html
+
+FHIR R4 datatype index: derived from HL7 FHIR R4 4.0.1 core StructureDefinitions,
+available under CC0. This is a compact derived index, not the full specification.
+https://hl7.org/fhir/R4/license.html
+https://hl7.org/fhir/R4/hl7.fhir.r4.core.tgz
+Core archive SHA256:
+b090bf929e1f665cf2c91583720849695bc38d2892a7c5037c56cb00817fb091
+
+SQLite: public domain. https://www.sqlite.org/copyright.html
+zlib: zlib license. https://zlib.net/
+OpenSSL 3: Apache License 2.0. https://www.openssl.org/source/license.html
+bzip2: BSD-style license. https://sourceware.org/bzip2/
+liblzma: public-domain/0BSD library, with included attribution notices.
+https://tukaani.org/xz/
+libffi: MIT license. https://sourceware.org/libffi/
+
+Windows packages also retain Microsoft's Visual C++ runtime libraries collected
+by PyInstaller; the applicable redistributable notice is included here.
