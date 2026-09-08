@@ -17,7 +17,6 @@ Windows x64 (PowerShell):
 
 Linux x64:
 Requires x86_64 Linux with system glibc 2.35+ (for example, Ubuntu 22.04+).
-Python, SQLite and the application libraries are bundled; no pip installs needed.
 Alpine/musl and ARM are not supported by this package.
   ./fhir-cohort-synth run --input "/data/FHIR export" --output "/data/FHIR output"
 
