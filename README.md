@@ -25,7 +25,7 @@ python3 fhir_synth.py run --input examples/mii-demo-bundle.json --output local-d
 ```
 
 On Windows, use `py -3` instead of `python3`. No installation step is needed if
-Python is already installed; a bundled runtime and launcher remain future work.
+Python is already installed. Alternatively, use the Windows or Linux package.
 The output directory must be new and outside any input directory.
 
 The command **indexes resources and patient links → perturbs → checks and reports**.
@@ -338,3 +338,9 @@ FHIR reference semantics:
 [Bundle reference resolution](https://hl7.org/fhir/R4/bundle.html#references).
 Hospital profile packages must be selected from the
 [MII Simplifier organization](https://simplifier.net/organization/koordinationsstellemii).
+
+## License
+
+The application is licensed under the [MIT License](LICENSE), copyright
+2026 DataX-DE. Bundled third-party components, including the FHIR definitions,
+retain their own licenses; see [component notices](packaging/THIRD-PARTY-NOTICES.txt).

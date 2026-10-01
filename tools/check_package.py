@@ -58,9 +58,11 @@ def check(archive):
         assert __version__ in run(executable, cwd, '--version').stdout
         assert '--input' in run(executable, cwd, 'run', '--help').stdout
         assert (folder / 'QUICKSTART.txt').is_file()
+        assert (folder / 'LICENSE').read_text(encoding='utf-8') == (ROOT / 'LICENSE').read_text(encoding='utf-8')
         assert (folder / 'licenses/PyInstaller.txt').is_file()
         assert not list(folder.rglob('*.sqlite*')), 'A database was included in the package'
         metadata = json.loads((folder / 'build-info.json').read_text(encoding='utf-8'))
+        assert metadata['application_license'] == 'MIT'
         for name, digest in metadata['data_sha256'].items():
             assert file_hash(folder / '_internal/fhir_cohort_synth/data' / name) == digest
 

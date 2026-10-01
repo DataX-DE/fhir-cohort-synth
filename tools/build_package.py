@@ -93,11 +93,13 @@ def build(output):
         folder = staging / name
         (staging / 'dist/fhir-cohort-synth').rename(folder)
         shutil.copy2(ROOT / 'packaging/QUICKSTART.txt', folder)
+        shutil.copy2(ROOT / 'LICENSE', folder)
         (folder / 'examples').mkdir()
         shutil.copy2(ROOT / 'examples/mii-demo-bundle.json', folder / 'examples')
         copy_licenses(folder)
         metadata = {
             'application_version': project['version'], 'target': target,
+            'application_license': project['license'],
             'python_version': platform.python_version(),
             'sqlite_version': sqlite3.sqlite_version, 'pyinstaller_version': version('pyinstaller'),
             'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),

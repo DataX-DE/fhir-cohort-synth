@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fhir-cohort-synth"
 version = "0.1.1"
 description = "Offline FHIR ingestion and source-derived perturbation"
+license = "MIT"
+license-files = ["LICENSE", "packaging/licenses/FHIR-CC0.txt"]
 requires-python = ">=3.11"
 dependencies = []
 

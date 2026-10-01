@@ -11,3 +11,36 @@ ingested/
 *.sqlite*
 /data/
 /test-output*/
+
+# Pipeline output, even when --output uses a different directory name.
+intermediates/
+result/
+.result.partial/
+.perturbed.ndjson.partial
+perturbation-report.json
+report.json
+report.txt
+run.json
+.run.json.partial
+
+# Local configuration and credentials. Only empty/example templates belong in Git.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+.direnv/
+.azure/
+.aws/
+secrets.json
+secrets.*.json
+credentials.json
+credentials.*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_ed25519

@@ -132,78 +132,78 @@ key-reuse reasons that cannot normally be triggered by the fixed-default CLI.
 
 | Exact reason | Code location |
 | --- | --- |
-| Output already exists; choose a new output directory. | [ingest.py:38](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:38) |
-| Input symlinks are unsupported; select the real file or directory. | [ingest.py:45](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:45) |
-| Output must be outside every input directory. | [ingest.py:50](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:50) |
-| Input directory contains a symlink; use an export without symlinks. | [ingest.py:55](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:55) |
-| Input must be a readable JSON/NDJSON/JSONL file (optionally gzip) or directory. | [ingest.py:61](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:61) |
-| No supported input files found. | [ingest.py:63](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:63) |
-| Base URL must be an HTTP(S) FHIR server base without credentials, query or fragment. | [ingest.py:85](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/ingest.py:85) |
+| Output already exists; choose a new output directory. | [ingest.py:38](../fhir_cohort_synth/ingest.py#L38) |
+| Input symlinks are unsupported; select the real file or directory. | [ingest.py:45](../fhir_cohort_synth/ingest.py#L45) |
+| Output must be outside every input directory. | [ingest.py:50](../fhir_cohort_synth/ingest.py#L50) |
+| Input directory contains a symlink; use an export without symlinks. | [ingest.py:55](../fhir_cohort_synth/ingest.py#L55) |
+| Input must be a readable JSON/NDJSON/JSONL file (optionally gzip) or directory. | [ingest.py:61](../fhir_cohort_synth/ingest.py#L61) |
+| No supported input files found. | [ingest.py:63](../fhir_cohort_synth/ingest.py#L63) |
+| Base URL must be an HTTP(S) FHIR server base without credentials, query or fragment. | [ingest.py:85](../fhir_cohort_synth/ingest.py#L85) |
 
 ### Ingestion stopping the workflow
 
 | Exact reason | Code location |
 | --- | --- |
-| Ingestion reported errors; inspect intermediates/report.json. Use a new output directory to retry. | [workflow.py:42](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/workflow.py:42) |
+| Ingestion reported errors; inspect intermediates/report.json. Use a new output directory to retry. | [workflow.py:42](../fhir_cohort_synth/workflow.py#L42) |
 
 ### Source database checks
 
 | Exact reason | Code location |
 | --- | --- |
-| Input must be an existing ingestion database file, not a symlink. | [cohort.py:44](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:44) |
-| Unsupported ingestion database schema; expected version 1 or 2. | [cohort.py:56](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:56) |
-| The ingestion run is incomplete; use a completed index. | [cohort.py:59](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:59) |
-| The source index contains ingestion errors; resolve them before processing. | [cohort.py:72](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:72) |
-| The source index has no non-contained resource roots. | [cohort.py:74](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:74) |
-| Input is not a readable, supported ingestion database. | [cohort.py:78](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/cohort.py:78) |
+| Input must be an existing ingestion database file, not a symlink. | [cohort.py:44](../fhir_cohort_synth/cohort.py#L44) |
+| Unsupported ingestion database schema; expected version 1 or 2. | [cohort.py:56](../fhir_cohort_synth/cohort.py#L56) |
+| The ingestion run is incomplete; use a completed index. | [cohort.py:59](../fhir_cohort_synth/cohort.py#L59) |
+| The source index contains ingestion errors; resolve them before processing. | [cohort.py:72](../fhir_cohort_synth/cohort.py#L72) |
+| The source index has no non-contained resource roots. | [cohort.py:74](../fhir_cohort_synth/cohort.py#L74) |
+| Input is not a readable, supported ingestion database. | [cohort.py:78](../fhir_cohort_synth/cohort.py#L78) |
 
 ### Perturbation settings, ownership and validation
 
 | Exact reason | Code location |
 | --- | --- |
-| Use strength 0 or in [0.01,1) and a nonnegative supported day range. | [perturbation.py:49](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:49) |
-| Cannot uniquely associate contained resources with the source index. | [perturbation.py:74](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:74) |
-| Contained resource ownership does not match the source index. | [perturbation.py:78](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:78) |
-| A resolved reference target is missing. | [perturbation.py:229](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:229) |
-| A contained reference crosses resource ownership. | [perturbation.py:232](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:232) |
-| Patient membership has no matching patient resource. | [perturbation.py:250](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:250) |
-| Cannot validate an unsupported algorithm or invalid run key. | [perturbation.py:325](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:325) |
-| Patient date offset does not match its keyed draw. | [perturbation.py:332](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:332) |
-| Output resource population does not match the source. | [perturbation.py:341](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:341) |
-| Output identity or resource type does not match the prepared map. | [perturbation.py:346](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:346) |
-| Output differs from its recorded change ledger. | [perturbation.py:354](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:354) |
-| Output quantity does not match its field-specific percentage change. | [perturbation.py:360](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:360) |
-| Output personal field does not match its keyed replacement. | [perturbation.py:382](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:382) |
-| Output date does not use its shared patient offset. | [perturbation.py:364](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:364) |
-| Output reference target or ownership changed. | [perturbation.py:370](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:370) |
-| Unrecorded resource content or structure changed. | [perturbation.py:378](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:378) |
-| Output already exists; choose a new output directory. | [perturbation.py:393](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:393) |
-| Perturbation requires a FHIR R4 4.0.1 source index. | [perturbation.py:408](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation.py:408) |
+| Use strength 0 or in [0.01,1) and a nonnegative supported day range. | [perturbation.py:49](../fhir_cohort_synth/perturbation.py#L49) |
+| Cannot uniquely associate contained resources with the source index. | [perturbation.py:74](../fhir_cohort_synth/perturbation.py#L74) |
+| Contained resource ownership does not match the source index. | [perturbation.py:78](../fhir_cohort_synth/perturbation.py#L78) |
+| A resolved reference target is missing. | [perturbation.py:229](../fhir_cohort_synth/perturbation.py#L229) |
+| A contained reference crosses resource ownership. | [perturbation.py:232](../fhir_cohort_synth/perturbation.py#L232) |
+| Patient membership has no matching patient resource. | [perturbation.py:250](../fhir_cohort_synth/perturbation.py#L250) |
+| Cannot validate an unsupported algorithm or invalid run key. | [perturbation.py:325](../fhir_cohort_synth/perturbation.py#L325) |
+| Patient date offset does not match its keyed draw. | [perturbation.py:332](../fhir_cohort_synth/perturbation.py#L332) |
+| Output resource population does not match the source. | [perturbation.py:341](../fhir_cohort_synth/perturbation.py#L341) |
+| Output identity or resource type does not match the prepared map. | [perturbation.py:346](../fhir_cohort_synth/perturbation.py#L346) |
+| Output differs from its recorded change ledger. | [perturbation.py:354](../fhir_cohort_synth/perturbation.py#L354) |
+| Output quantity does not match its field-specific percentage change. | [perturbation.py:360](../fhir_cohort_synth/perturbation.py#L360) |
+| Output personal field does not match its keyed replacement. | [perturbation.py:382](../fhir_cohort_synth/perturbation.py#L382) |
+| Output date does not use its shared patient offset. | [perturbation.py:364](../fhir_cohort_synth/perturbation.py#L364) |
+| Output reference target or ownership changed. | [perturbation.py:370](../fhir_cohort_synth/perturbation.py#L370) |
+| Unrecorded resource content or structure changed. | [perturbation.py:389](../fhir_cohort_synth/perturbation.py#L389) |
+| Output already exists; choose a new output directory. | [perturbation.py:404](../fhir_cohort_synth/perturbation.py#L404) |
+| Perturbation requires a FHIR R4 4.0.1 source index. | [perturbation.py:419](../fhir_cohort_synth/perturbation.py#L419) |
 
 ### File layout and export verification
 
 | Exact reason | Code location |
 | --- | --- |
-| The source index has no file locations for export. | [export_files.py:34](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:34) |
-| A source filename cannot be represented inside the output directory. | [export_files.py:43](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:43) |
-| Source files map to the same output filename; use distinct source names. | [export_files.py:56](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:56) |
-| Verified resources do not match their source file locations. | [export_files.py:97](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:97) |
-| An exported file differs from the verified resource stream. | [export_files.py:104](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:104) |
-| The exported resource population differs from the verified stream. | [export_files.py:109](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/export_files.py:109) |
+| The source index has no file locations for export. | [export_files.py:34](../fhir_cohort_synth/export_files.py#L34) |
+| A source filename cannot be represented inside the output directory. | [export_files.py:43](../fhir_cohort_synth/export_files.py#L43) |
+| Source files map to the same output filename; use distinct source names. | [export_files.py:56](../fhir_cohort_synth/export_files.py#L56) |
+| Verified resources do not match their source file locations. | [export_files.py:97](../fhir_cohort_synth/export_files.py#L97) |
+| An exported file differs from the verified resource stream. | [export_files.py:104](../fhir_cohort_synth/export_files.py#L104) |
+| The exported resource population differs from the verified stream. | [export_files.py:109](../fhir_cohort_synth/export_files.py#L109) |
 
 ### Local key reuse and key checks
 
 | Exact reason | Code location |
 | --- | --- |
-| Key reuse requires an existing state database file, not a symlink. | [perturbation_store.py:128](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:128) |
-| Key reuse requires a supported schema 3 state database. | [perturbation_store.py:136](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:136) |
-| Key reuse requires a completed perturbation run. | [perturbation_store.py:139](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:139) |
-| State database has an unsupported algorithm or invalid run key. | [perturbation_store.py:141](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:141) |
-| Key reuse requires the same indexed source snapshot. | [perturbation_store.py:143](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:143) |
-| Key reuse requires the same datatype definitions. | [perturbation_store.py:145](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:145) |
-| Key reuse requires the same strength and date range as the previous run. | [perturbation_store.py:147](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:147) |
-| Cannot reuse a key from this state database; use a completed, supported keyed run. | [perturbation_store.py:152](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:152) |
-| Run key must contain exactly 32 bytes. | [perturbation_store.py:160](/Volumes/MyDataDrive/personal/datax/fhir-cohort-synth/fhir_cohort_synth/perturbation_store.py:160) |
+| Key reuse requires an existing state database file, not a symlink. | [perturbation_store.py:128](../fhir_cohort_synth/perturbation_store.py#L128) |
+| Key reuse requires a supported schema 3 state database. | [perturbation_store.py:136](../fhir_cohort_synth/perturbation_store.py#L136) |
+| Key reuse requires a completed perturbation run. | [perturbation_store.py:139](../fhir_cohort_synth/perturbation_store.py#L139) |
+| State database has an unsupported algorithm or invalid run key. | [perturbation_store.py:141](../fhir_cohort_synth/perturbation_store.py#L141) |
+| Key reuse requires the same indexed source snapshot. | [perturbation_store.py:143](../fhir_cohort_synth/perturbation_store.py#L143) |
+| Key reuse requires the same datatype definitions. | [perturbation_store.py:145](../fhir_cohort_synth/perturbation_store.py#L145) |
+| Key reuse requires the same strength and date range as the previous run. | [perturbation_store.py:147](../fhir_cohort_synth/perturbation_store.py#L147) |
+| Cannot reuse a key from this state database; use a completed, supported keyed run. | [perturbation_store.py:152](../fhir_cohort_synth/perturbation_store.py#L152) |
+| Run key must contain exactly 32 bytes. | [perturbation_store.py:160](../fhir_cohort_synth/perturbation_store.py#L160) |
 
 The duplicate output-directory reason is defined in both ingestion and
 perturbation. Invalid numeric/date settings and base URL messages concern Python

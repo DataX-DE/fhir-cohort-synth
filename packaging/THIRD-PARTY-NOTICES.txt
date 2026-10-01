@@ -2,8 +2,9 @@ Bundled components
 ==================
 
 The application bundles Python and selected standard-library dependencies.
-Their notices are included in this directory. These component licenses do not
-assign a new license to the fhir-cohort-synth application itself.
+Their notices are included in this directory. The fhir-cohort-synth application
+is licensed under MIT; see LICENSE at the package root. Bundled third-party
+components retain their own licenses listed below.
 
 Python: Python Software Foundation License and included component notices.
 https://www.python.org/doc/versions/
